@@ -3,263 +3,99 @@
 #################################################################
 
 homeassistant:
-  name: Home
-  latitude: !secret latitude
-  longitude: !secret longitude
-  elevation: !secret elevation
-  unit_system: imperial
-  time_zone: America/Chicago
+  auth_providers:
+    - type: homeassistant
+    - type: trusted_networks
+      trusted_networks:
+        - REDACTED.0/24
   customize: !include customize.yaml
-frontend:
-  extra_html_url:
-    - /local/hass-bha-icons.html
-updater:
-  reporting: no
-sun:
-conversation:
-discovery:
-  ignore:
-    - apple_tv
-    - harmony
-    - deconz
-  enable:
-    - homekit
-config:
-person:
-system_health:
-mobile_app:
+default_config:
 http:
+  use_x_forREDACTEDed_for: true
+  trusted_proxies:
+    - REDACTED.33
   ssl_certificate: !secret ssl_certificate
   ssl_key: !secret ssl_key
-  base_url: !secret base_url
-  ip_ban_enabled: true
-  login_attempts_threshold: 3
+  ip_ban_enabled: false
+#  login_attempts_threshold: 10
+#logger:
+#  default: warning
+#  logs:
+#    homeassistant.components.zha: debug
 
 #################################################################
 ## Components
 #################################################################
 
-ecobee:
-  api_key: !secret ecobee_api_key
+alarm_control_panel:
+  - platform: manual
+    name: Alarm
+    code_arm_required: false
+    arming_time: 30
+    delay_time: 30
+    trigger_time: 120
+    disarmed:
+      trigger_time: 0
+    armed_home:
+      arming_time: 30
+      delay_time: 30
+      trigger_time: 120 
+    armed_away:
+      arming_time: 30
+      delay_time: 15
+      trigger_time: 120
 
-hue:
-  bridges:
-    - host: REDACTED.106
-      allow_hue_groups: false
-      allow_unreachable: true
-
-emulated_hue:
-  host_ip: REDACTED.105
-  listen_port: 8300
-  off_maps_to_on_domains:
-    - script
-    - scene
-  expose_by_default: false
-
-lutron_caseta:
-    host: REDACTED.130
-    keyfile: !secret lutron_keyfile
-    certfile: !secret lutron_certfile
-    ca_certs: !secret lutron_cacerts
-
-vera:
-  vera_controller_url: http://REDACTED.132:3480/
-  exclude: [ 19]
-
-media_player:
-  - platform: yamaha
-    name: "Media Center Receiver"
-    host: REDACTED.94
-    source_ignore:
-      - "AUX"
-      - "AV1"
-      - "AV2"
-      - "AV3"
-      - "Bluetooth"
-      - "Deezer"
-      - "MusicCast Link"
-      - "NET RADIO"
-      - "Pandora"
-      - "SERVER"
-      - "Spotify"
-      - "TIDAL"
-      - "TUNER"
-      - "USB"
-    source_names:
-      HDMI1: "Apple TV"
-      HDMI2: "Xbox One X"
-      HDMI3: "Nintendo Switch"
-      HDMI4: "Wii U"
-      AUDIO1: "TV Audio"
-      AUDIO2: "Sonos Digital"
-      AUDIO3: "Sonos"
-
-apple_tv:
-  - name: Living Room Apple TV
-    host: REDACTED.150
-    login_id: !secret apple_tv_login_id
-    credentials: !secret apple_tv_living_room_cred
-    start_off: false
-  - name: Guest Bedroom Apple TV
-    host: REDACTED.153
-    login_id: !secret apple_tv_login_id
-    credentials: !secret apple_tv_guest_bedroom_cred
-    start_off: false
-  - name: Bedroom Apple TV
-    host: REDACTED.152
-    login_id: !secret apple_tv_login_id
-    credentials: !secret apple_tv_bedroom_cred
-    start_off: false
-  - name: USER1's Office Apple TV
-    host: REDACTED.151
-    login_id: !secret apple_tv_login_id
-    credentials: !secret apple_tv_office_cred
-    start_off: false
-
-remote:
-  - platform: harmony
-    name: Media Center
-    host: REDACTED.109
-    activity: Watch TV
-  - platform: harmony
-    name: Bedroom TV
-    host: REDACTED.247
-    activity: Watch TV
-  - platform: harmony
-    name: Office TV
-    host: REDACTED.176
-    activity: Watch TV
-
-map:
-
-wemo:
-
-ifttt:
-  key: !secret ifttt_key
-
-device_tracker:
-  - platform: unifi
-    username: !secret unifi_username
-    password: !secret unifi_password
-    host: REDACTED.3
-    verify_ssl: false
-    consider_home: 180
-    new_device_defaults:
-      track_new_devices: False
-      hide_if_away: False
-
-ring:
-    username: !secret ring_username
-    password: !secret ring_password
-
-binary_sensor:
-  - platform: ring
-    monitored_conditions:
-      - ding
-      - motion
-  - platform: ping
-    host: 8.8.8.8
-    name: WAN
-    scan_interval: 60
-  - platform: ping
-    host: REDACTED.1
-    name: Gateway
-    scan_interval: 60
-  - platform: ping
-    host: REDACTED.1
-    name: Charleston VPN
-    scan_interval: 60
-  - platform: ping
-    host: REDACTED.1
-    name: Rochester VPN
-    scan_interval: 60
-
-stream:
-
-camera:
-  - platform: generic
-    name: Front Porch
-    still_image_url: https://REDACTED.181/snap.jpeg
-    stream_source: rtsp://REDACTED.3:7447/REDACTED
-    verify_ssl: false
-  - platform: generic
-    name: Driveway
-    still_image_url: https://REDACTED.183/snap.jpeg
-    stream_source: rtsp://REDACTED.3:7447/REDACTED
-    verify_ssl: false
-  - platform: generic
-    name: Garage
-    still_image_url: https://REDACTED.91/snap.jpeg
-    stream_source: rtsp://REDACTED.3:7447/REDACTED
-    verify_ssl: false
-  - platform: generic
-    name: Backyard
-    still_image_url: https://REDACTED.89/snap.jpeg
-    stream_source: rtsp://REDACTED.3:7447/REDACTED
-    verify_ssl: false
-  - platform: generic
-    name: Side Yard
-    still_image_url: https://REDACTED.90/snap.jpeg
-    stream_source: rtsp://REDACTED.3:7447/REDACTED
-    verify_ssl: false
-
-tts:
-  - platform: amazon_polly
-    aws_access_key_id: !secret aws_access_key_id
-    aws_secret_access_key: !secret aws_secret_access_key
-
-google:
-  client_id: !secret google_client_id
-  client_secret: !secret goole_client_secret
-  track_new_calendar: true
-
-wink:
-
-vacuum:
-  - platform: roomba
-    host: REDACTED.228
-    username: !secret downstairs_roomba_username
-    password: !secret downstairs_roomba_password
-    name: Downstairs Roomba
-  - platform: roomba
-    host: REDACTED.229
-    username: !secret upstairs_roomba_username
-    password: !secret upstairs_roomba_password
-    name: Upstairs Roomba
+route53:
+  aws_access_key_id: !secret aws_access_key_id_route53
+  aws_secret_access_key: !secret aws_secret_access_key_route53
+  zone: !secret aws_zone_route53
+  domain: !secret aws_domain_route53
+  records:
+    - home
 
 weather:
-  - platform: darksky
-    api_key: !secret darksky_api_key
-    mode: daily
+  - platform: template
+    name: "REDACTED, MO"
+    unique_id: weather_REDACTED
+    condition_template: "{{ states('sensor.weather_condition_REDACTED') }}"
+    temperature_template: "{{ state_attr('weather.REDACTED_ecobee', 'temperature') }}"
+    humidity_template: "{{ state_attr('weather.REDACTED_ecobee', 'humidity') }}"
+    forecast_daily_template: "{{ state_attr('sensor.REDACTED_daily_forecast', 'forecast') }}"
+    attribution_template: "{{ state_attr('weather.REDACTED_ecobee', 'attribution') }}"
+    pressure_template: "{{ state_attr('weather.REDACTED_ecobee', 'pressure') }}"
+    wind_speed_template: "{{ state_attr('weather.REDACTED_ecobee', 'wind_speed') }}"
+    wind_bearing_template: "{{ state_attr('weather.REDACTED_ecobee', 'wind_bearing') }}"
+    visibility_template: "{{ state_attr('weather.REDACTED_ecobee', 'visibility') }}"
 
-nest:
-  client_id: !secret nest_client_id
-  client_secret: !secret nest_client_secret
+#################################################################
+## Notifications
+#################################################################
 
-dyson:
-  username: !secret dyson_username
-  password: !secret dyson_password
-  language: GB
-  devices:
-    - device_id: !secret dyson_id
-      device_ip: REDACTED.95
+notify:
+  - platform: group
+    name: REDACTED_devices
+    services:
+      - service: mobile_app_REDACTEDs_iphone
+      - service: mobile_app_REDACTEDs_ipad
+      - service: mobile_app_REDACTED_s_macbook_pro
+
+  - platform: group
+    name: USER2_devices
+    services:
+      - service: mobile_app_USER2s_iphone
+      - service: mobile_app_USER2s_ipad
 
 #################################################################
 ## Includes
 #################################################################
 
-automation: !include_dir_merge_list automation
-recorder: !include recorder.yaml
-logbook: !include logbook.yaml
-history: !include history.yaml
-zone: !include zones.yaml
+automation manual: !include_dir_merge_list automation/
+automation ui: !include automations.yaml
 group: !include groups.yaml
-scene: !include scenes.yaml
-sensor: !include sensors.yaml
-input_boolean: !include input_boolean.yaml
-input_select: !include input_select.yaml
 script: !include scripts.yaml
-light: !include light_group.yaml
 homekit: !include homekit.yaml
-ios: !include ios.yaml
 switch: !include switch.yaml
+emulated_hue: !include emulated_hue.yaml
+template: !include template.yaml
+command_line: !include command_line.yaml
+python_script:

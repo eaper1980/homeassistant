@@ -3,10 +3,11 @@
 #################################################################
 
         ##########################################################
-        ## Turn On Front Porch when Door Bell Rings
+        ## Turn On Front Porch Lights when Doorbell Rings
         ##########################################################
 
-- alias: Doorbell - Turn On Front Porch when Rung
+- alias: Doorbell - Turn On Front Porch Lights when Rung
+  id: 'doorbell_turn_on_front_porch_lights_when_rung'
 
   trigger:
     - platform: state
@@ -30,10 +31,11 @@
         brightness_pct: 100
 
         ##########################################################
-        ## Reset Front Porch Brightness After Doorbell Rings
+        ## Reset Front Porch Lights Brightness After Doorbell Rings
         ##########################################################
 
-- alias: Doorbell - Reset Front Porch Brightness After Ring
+- alias: Doorbell - Reset Front Porch Lights Brightness After Ring
+  id: 'doorbell_reset_front_porch_lights_brightness_after_ring'
 
   trigger:
     - platform: state
@@ -42,7 +44,7 @@
       to: 'off'
       for:
         hours: 0
-        minutes: 30
+        minutes: 15
         seconds: 0
 
   condition:
@@ -58,18 +60,23 @@
       entity_id:
         - light.front_porch
       data:
-        brightness_pct: 40
-        transition: 300
+        brightness_pct: 50
+        transition: 900
 
         ##########################################################
-        ## Turn On Front Porch when Motion Detected
+        ## Turn On Front Porch Lights when Motion Detected
         ##########################################################
 
-- alias: Doorbell - Turn On Front Porch when Motion Detected
+- alias: Doorbell - Turn On Front Porch Lights when Motion Detected
+  id: 'doorbell_turn_on_front_porch_lights_when_motion_detected'
 
   trigger:
     - platform: state
       entity_id: binary_sensor.ring_front_door_motion
+      from: 'off'
+      to: 'on'
+    - platform: state
+      entity_id: binary_sensor.front_porch_person_detected
       from: 'off'
       to: 'on'
 
@@ -89,10 +96,11 @@
         brightness_pct: 100
 
         ##########################################################
-        ## Reset Front Porch Brightness After Motion Detected
+        ## Reset Front Porch Lights Brightness After Motion Detected
         ##########################################################
 
-- alias: Doorbell - Reset Front Porch Brightness After Motion Detected
+- alias: Doorbell - Reset Front Porch Lights Brightness After Motion Detected
+  id: 'doorbell_reset_front_porch_lights_brightness_after_motion_detected'
 
   trigger:
     - platform: state
@@ -101,7 +109,15 @@
       to: 'off'
       for:
         hours: 0
-        minutes: 30
+        minutes: 15
+        seconds: 0
+    - platform: state
+      entity_id: binary_sensor.front_porch_person_detected
+      from: 'on'
+      to: 'off'
+      for:
+        hours: 0
+        minutes: 15
         seconds: 0
 
   condition:
@@ -124,14 +140,15 @@
       entity_id:
         - light.front_porch
       data:
-        brightness_pct: 40
-        transition: 300
+        brightness_pct: 50
+        transition: 900
 
         ##########################################################
-        ## Turn On Lights when Door Bell Rings and Away
+        ## Turn On Lights when Doorbell Rings and Away
         ##########################################################
 
 - alias: Doorbell - Turn On Lights when Ring and Away
+  id: 'doorbell_turn_on_lights_when_ring_and_away'
 
   trigger:
     - platform: state
@@ -146,28 +163,41 @@
     - condition: state
       entity_id: input_boolean.disable_doorbell
       state: 'off'
-    - condition: state
-      entity_id: group.household
-      state: 'not_home'
+    - condition: not
+      conditions:
+      - condition: state
+        entity_id: group.household
+        state: 'home'
 
   action:
     - service: light.turn_on
       entity_id:
         - light.living_room_lamps
-        - light.office_lamp
-        - light.closet_lamp
+      data:
+        brightness_pct: 100
+        color_temp: 370
+    - service: light.turn_on
+      entity_id:
         - light.kitchen_sink
+      data:
+        brightness_pct: 100
+    - service: light.turn_on
+      entity_id:
         - light.back_door
+      data:
+        brightness_pct: 100
+    - service: light.turn_on
+      entity_id:
         - light.garage_light
       data:
         brightness_pct: 100
-        color_temp: 447
 
         ##########################################################
-        ## Turn Off Lights After Door Bell Rings and Away
+        ## Turn Off Lights After Doorbell Rings and Away
         ##########################################################
 
 - alias: Doorbell - Turn Off Lights After Ring and Away
+  id: 'doorbell_turn_off_lights_after_ring_and_away'
 
   trigger:
     - platform: state
@@ -175,8 +205,8 @@
       from: 'on'
       to: 'off'
       for:
-        hours: 1
-        minutes: 0
+        hours: 0
+        minutes: 15
         seconds: 0
 
   condition:
@@ -186,16 +216,16 @@
     - condition: state
       entity_id: input_boolean.disable_doorbell
       state: 'off'
-    - condition: state
-      entity_id: group.household
-      state: 'not_home'
+    - condition: not
+      conditions:
+      - condition: state
+        entity_id: group.household
+        state: 'home'
 
   action:
     - service: light.turn_off
       entity_id:
         - light.living_room_lights
-        - light.office_lamp
-        - light.closet_lamp
       data:
         transition: 900
     - service: light.turn_off
@@ -204,6 +234,10 @@
     - service: light.turn_on
       entity_id:
         - light.back_door
+      data:
+        brightness_pct: 1
+    - service: light.turn_on
+      entity_id:
         - light.garage_light
       data:
         brightness_pct: 1
@@ -213,10 +247,15 @@
         ##########################################################
 
 - alias: Doorbell - Turn On Lights when Motion Detected and Away
+  id: 'doorbell_turn_on_lights_when_motion_detected_and_away'
 
   trigger:
     - platform: state
       entity_id: binary_sensor.ring_front_door_motion
+      from: 'off'
+      to: 'on'
+    - platform: state
+      entity_id: binary_sensor.front_porch_person_detected
       from: 'off'
       to: 'on'
 
@@ -227,28 +266,41 @@
     - condition: state
       entity_id: input_boolean.disable_doorbell
       state: 'off'
-    - condition: state
-      entity_id: group.household
-      state: 'not_home'
+    - condition: not
+      conditions:
+      - condition: state
+        entity_id: group.household
+        state: 'home'
 
   action:
     - service: light.turn_on
       entity_id:
         - light.living_room_lamps
-        - light.office_lamp
-        - light.closet_lamp
+      data:
+        brightness_pct: 100
+        color_temp: 370
+    - service: light.turn_on
+      entity_id:
         - light.kitchen_sink
+      data:
+        brightness_pct: 100
+    - service: light.turn_on
+      entity_id:
         - light.back_door
+      data:
+        brightness_pct: 100
+    - service: light.turn_on
+      entity_id:
         - light.garage_light
       data:
         brightness_pct: 100
-        color_temp: 447
 
         ##########################################################
         ## Turn Off Lights After Motion Detected and Away
         ##########################################################
 
 - alias: Doorbell - Turn Off Lights After Motion Detected and Away
+  id: 'doorbell_turn_off_lights_after_motion_dtected_and_away'
 
   trigger:
     - platform: state
@@ -256,8 +308,16 @@
       from: 'on'
       to: 'off'
       for:
-        hours: 1
-        minutes: 0
+        hours: 0
+        minutes: 15
+        seconds: 0
+    - platform: state
+      entity_id: binary_sensor.front_porch_person_detected
+      from: 'on'
+      to: 'off'
+      for:
+        hours: 0
+        minutes: 15
         seconds: 0
 
   condition:
@@ -267,16 +327,16 @@
     - condition: state
       entity_id: input_boolean.disable_doorbell
       state: 'off'
-    - condition: state
-      entity_id: group.household
-      state: 'not_home'
+    - condition: not
+      conditions:
+      - condition: state
+        entity_id: group.household
+        state: 'home'
 
   action:
     - service: light.turn_off
       entity_id:
         - light.living_room_lights
-        - light.office_lamp
-        - light.closet_lamp
       data:
         transition: 900
     - service: light.turn_off
@@ -285,15 +345,24 @@
     - service: light.turn_on
       entity_id:
         - light.back_door
+      data:
+        brightness_pct: 1
+    - service: light.turn_on
+      entity_id:
         - light.garage_light
       data:
         brightness_pct: 1
 
+#################################################################
+## Notifications
+#################################################################
+
         ##########################################################
-        ## Front Door Bell Bathroom Audio Notification
+        ## Doorbell Ring iOS USER1 Notification
         ##########################################################
 
-- alias: Doorbell - Front Door Bell Bathroom Notification
+- alias: Doorbell - Ring iOS USER1 Notification
+  id: 'doorbell_ring_ios_USER1_notification'
 
   trigger:
     - platform: state
@@ -303,33 +372,28 @@
 
   condition:
     - condition: state
-      entity_id: group.household
-      state: 'home'
-    - condition: state
-      entity_id: input_boolean.disable_voice_greeting
+      entity_id: input_boolean.disable_notifications
       state: 'off'
-    - condition: state
-      entity_id: input_boolean.disable_doorbell
-      state: 'off'
-    - condition: state
-      entity_id: binary_sensor.bathroom_occupancy
-      state: 'on'
-
+      
   action:
-    - service: script.turn_on
-      entity_id: script.say
+    - service: notify.USER1_devices
       data:
-        variables:
-          master: 'media_player.sonos_bathroom'
-          where: 'media_player.sonos_bathroom'
-          volume: '.6'
-          what: 'Someone is at the Front Door'
+        message: Someone is at the Front Door
+        data:
+          tag: doorbell
+          group: doorbell
+          entity_id: camera.front_porch
+          actions:
+            - action: "unlock_front_door"
+              title: "Unlock Front Door"
+              destructive: true
 
         ##########################################################
-        ## Front Door Bell Basement Audio Notification
+        ## Doorbell Ring iOS USER2 Notification
         ##########################################################
 
-- alias: Doorbell - Front Doorbell Basement Notification
+- alias: Doorbell - Ring iOS USER2 Notification
+  id: 'doorbell_ring_ios_USER2_notification'
 
   trigger:
     - platform: state
@@ -339,216 +403,48 @@
 
   condition:
     - condition: state
-      entity_id: group.household
-      state: 'home'
-    - condition: state
-      entity_id: input_boolean.disable_voice_greeting
+      entity_id: input_boolean.disable_notifications
       state: 'off'
-    - condition: state
-      entity_id: input_boolean.disable_doorbell
-      state: 'off'
-    - condition: state
-      entity_id: group.basement_occupancy
-      state: 'on'
-
+      
   action:
-    - service: script.turn_on
-      entity_id: script.say
+    - service: notify.USER2_devices
       data:
-        variables:
-          master: 'media_player.sonos_basement'
-          where: 'media_player.sonos_basement'
-          volume: '.6'
-          what: 'Someone is at the Front Door'
+        message: Someone is at the Front Door
+        data:
+          tag: doorbell
+          group: doorbell
+          entity_id: 
+           - camera.front_porch
+          actions:
+            - action: "unlock_front_door"
+              title: "Unlock Front Door"
+              destructive: true
 
         ##########################################################
-        ## Front Door Bell Kitchen Audio Notification
+        ## Ring Battery Low
         ##########################################################
 
-- alias: Doorbell - Front Doorbell Kitchen Notification
+- alias: Doorbell - Ring Battery Low
+  id: 'doorbell_ring_battery_low'
 
   trigger:
-    - platform: state
-      entity_id: binary_sensor.ring_front_door_ding
-      from: 'off'
-      to: 'on'
+    - platform: numeric_state
+      entity_id: sensor.ring_front_door_battery
+      below: 31
+      for:
+        hours: 1
+        minutes: 0
+        seconds: 0
 
   condition:
     - condition: state
-      entity_id: group.household
-      state: 'home'
-    - condition: state
-      entity_id: input_boolean.disable_voice_greeting
+      entity_id: input_boolean.disable_notifications
       state: 'off'
-    - condition: state
-      entity_id: input_boolean.disable_doorbell
-      state: 'off'
-    - condition: state
-      entity_id: binary_sensor.kitchen_occupancy
-      state: 'on'
 
   action:
-    - service: script.turn_on
-      entity_id: script.say
+    - service: notify.USER1_devices
       data:
-        variables:
-          master: 'media_player.sonos_kitchen'
-          where: 'media_player.sonos_kitchen'
-          volume: '.6'
-          what: 'Someone is at the Front Door'
-
-        ##########################################################
-        ## Front Door Bell Office Audio Notification
-        ##########################################################
-
-- alias: Doorbell - Front Doorbell Office Notification
-
-  trigger:
-    - platform: state
-      entity_id: binary_sensor.ring_front_door_ding
-      from: 'off'
-      to: 'on'
-
-  condition:
-    condition: and
-    conditions:
-      - condition: state
-        entity_id: group.household
-        state: 'home'
-      - condition: state
-        entity_id: input_boolean.disable_voice_greeting
-        state: 'off'
-      - condition: state
-        entity_id: input_boolean.disable_doorbell
-        state: 'off'
-      - condition: or
-        conditions:
-          - condition: state
-            entity_id: binary_sensor.office_occupancy
-            state: 'on'
-          - condition: state
-            entity_id: binary_sensor.USER2_office_occupancy
-            state: 'on'
-
-  action:
-    - service: script.turn_on
-      entity_id: script.say
-      data:
-        variables:
-          master: 'media_player.sonos_USER1s_office'
-          where: 'media_player.sonos_USER1s_office, media_player.sonos_USER2s_office'
-          volume: '.6'
-          what: 'Someone is at the Front Door'
-
-        ##########################################################
-        ## Front Door Camera TV when Doorbell Rings
-        ##########################################################
-
-- alias: Doorbell - Front Door Camera TV when Doorbell Rings
-
-  trigger:
-    - platform: state
-      entity_id: binary_sensor.ring_front_door_ding
-      from: 'off'
-      to: 'on'
-
-  condition:
-    - condition: state
-      entity_id: group.household
-      state: 'home'
-    - condition: state
-      entity_id: input_boolean.disable_doorbell
-      state: 'off'
-    - condition: or
-      conditions:
-      - condition: state
-        entity_id: input_select.remote
-        state: 'Watch TV'
-      - condition: state
-        entity_id: input_select.remote
-        state: 'Play Sonos'
-
-  action:
-    - service: camera.play_stream
-      data:
-        entity_id: camera.front_porch
-        media_player: media_player.living_room_apple_tv
-
-        ##########################################################
-        ## Camera Office TV when Doorbell Rings TV Off
-        ##########################################################
-
-- alias: Doorbell - Camera Office TV when Doorbell Rings TV Off
-
-  trigger:
-    - platform: state
-      entity_id: binary_sensor.ring_front_door_ding
-      from: 'off'
-      to: 'on'
-
-  condition:
-    - condition: state
-      entity_id: input_boolean.disable_doorbell
-      state: 'off'
-    - condition: time
-      after: '08:00'
-      before: '23:00'
-    - condition: state
-      entity_id: device_tracker.USER1s_iphone
-      state: 'home'
-    - condition: state
-      entity_id: binary_sensor.office_occupancy
-      state: 'on'
-    - condition: state
-      entity_id: input_select.office_remote
-      state: 'PowerOff'
-
-  action:
-    - service: camera.play_stream
-      data:
-        entity_id: camera.front_porch
-        media_player: media_player.USER1s_office_apple_tv
-    - service: input_select.select_option
-      data:
-        entity_id: input_select.office_remote
-        option: "Watch TV"
-    - delay: '00:05:00'
-    - service: input_select.select_option
-      data:
-        entity_id: input_select.office_remote
-        option: "PowerOff"
-
-        ##########################################################
-        ## Camera Office TV when Doorbell Rings TV On
-        ##########################################################
-
-- alias: Doorbell - Camera Office TV when Doorbell Rings TV On
-
-  trigger:
-    - platform: state
-      entity_id: binary_sensor.ring_front_door_ding
-      from: 'off'
-      to: 'on'
-
-  condition:
-    - condition: state
-      entity_id: input_boolean.disable_doorbell
-      state: 'off'
-    - condition: time
-      after: '08:00'
-      before: '23:00'
-    - condition: state
-      entity_id: device_tracker.USER1s_iphone
-      state: 'home'
-    - condition: state
-      entity_id: binary_sensor.office_occupancy
-      state: 'on'
-    - condition: state
-      entity_id: input_select.office_remote
-      state: 'WatchTV'
-
-  action:
-    - service: camera.play_stream
-      data:
-        entity_id: camera.front_porch
-        media_player: media_player.USER1s_office_apple_tv
+        message: Ring Battery Low, Replace Battery Soon
+        data:
+          tag: doorbell-battery
+          group: doorbell

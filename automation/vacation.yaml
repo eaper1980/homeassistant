@@ -3,10 +3,65 @@
 #################################################################
 
         ##########################################################
-        ## Turn on Vacation Mode when Gone 24 Hours
+        ## Vacation Mode On
         ##########################################################
 
-- alias: Vacation - Turn on when Gone 24 Hours
+- alias: Vacation - Mode On
+  id: 'vacation_mode_on'
+
+  trigger:
+    - platform: state
+      entity_id: input_boolean.vacation_mode
+      to: 'on'
+
+  condition:
+    - condition: not
+      conditions:
+      - condition: state
+        entity_id: group.household
+        state: 'home'
+    - condition: state
+      entity_id: input_boolean.guest_mode
+      state: 'off'
+
+  action:
+    - service: homeassistant.turn_on
+      entity_id:
+       - input_boolean.disable_rainy_day
+       - input_boolean.disable_interior_lights_sunset
+       - input_boolean.disable_media_lights
+       - input_boolean.disable_occupancy
+       - input_boolean.disable_motion
+       - input_boolean.disable_fountain
+
+        ##########################################################
+        ## Vacation Mode Off
+        ##########################################################
+
+- alias: Vacation - Mode Off
+  id: 'vacation_mode_off'
+
+  trigger:
+    - platform: state
+      entity_id: input_boolean.vacation_mode
+      to: 'off'
+
+  action:
+    - service: homeassistant.turn_off
+      entity_id:
+       - input_boolean.disable_rainy_day
+       - input_boolean.disable_interior_lights_sunset
+       - input_boolean.disable_media_lights
+       - input_boolean.disable_occupancy
+       - input_boolean.thermostat_away
+       - input_boolean.disable_motion
+
+        ##########################################################
+        ## Turn On Vacation Mode when Gone 24 Hours
+        ##########################################################
+
+- alias: Vacation - Turn On when Gone 24 Hours
+  id: 'vacation_turn_on_when_gone_24_hours'
 
   trigger:
     - platform: state
@@ -31,6 +86,7 @@
         ##########################################################
 
 - alias: Vacation - Turn off when Home
+  id: 'vacation_turn_off_when_home'
 
   trigger:
     - platform: state
@@ -48,96 +104,37 @@
       entity_id: input_boolean.vacation_mode
 
         ##########################################################
-        ## Turn on Vacation Mode when on Vacation
+        ## Turn On Vacation Mode when Thermostat set to Vacation
         ##########################################################
 
-- alias: Vacation - Turn on when on Vacation
+- alias: Vacation - Turn On when Thermostat set to Vacation
+  id: 'vacation_turn_on_when_thermostat_set_to_vacation'
 
   trigger:
     - platform: state
-      entity_id: device_tracker.USER1s_iphone
-      from: 'not_home'
+      entity_id: sensor.thermostat_climate_mode
       to: 'vacation'
 
   condition:
     - condition: state
       entity_id: input_boolean.disable_home_away
       state: 'off'
+    - condition: not
+      conditions:
+      - condition: state
+        entity_id: group.household
+        state: 'home'
 
   action:
     - service: homeassistant.turn_on
       entity_id: input_boolean.vacation_mode
 
         ##########################################################
-        ## Turn on Vacation Mode when Thermostat set to Vacation
+        ## Vacation Lights On at Night
         ##########################################################
 
-- alias: Vacation - Turn on Vacation Mode when Thermostat set to Vacation
-
-  trigger:
-    - platform: state
-      entity_id: sensor.thermostat_climate_mode
-      to: 'Vacation'
-
-  condition:
-    - condition: state
-      entity_id: input_boolean.disable_home_away
-      state: 'off'
-    - condition: state
-      entity_id: group.household
-      state: 'not_home'
-
-  action:
-    - service: homeassistant.turn_on
-      entity_id: input_boolean.vacation_mode
-
-        ##########################################################
-        ## Turn on Vacation Mode when at the Lake
-        ##########################################################
-
-- alias: Vacation - Turn on when at the Lake
-
-  trigger:
-    - platform: state
-      entity_id: device_tracker.USER1s_iphone
-      from: 'not_home'
-      to: 'lake'
-
-  condition:
-    - condition: state
-      entity_id: input_boolean.disable_home_away
-      state: 'off'
-
-  action:
-    - service: homeassistant.turn_on
-      entity_id: input_boolean.vacation_mode
-
-        ##########################################################
-        ## Turn off Vacation Mode when leaving the Lake
-        ##########################################################
-
-- alias: Vacation - Turn off when leaving the Lake
-
-  trigger:
-    - platform: state
-      entity_id: device_tracker.USER1s_iphone
-      from: 'lake'
-      to: 'not_home'
-
-  condition:
-    - condition: state
-      entity_id: input_boolean.disable_home_away
-      state: 'off'
-
-  action:
-    - service: homeassistant.turn_off
-      entity_id: input_boolean.vacation_mode
-
-        ##########################################################
-        ## Vacation Mode Scene
-        ##########################################################
-
-- alias: Vacation - Scene
+- alias: Vacation - Lights On at Night
+  id: 'vacation_lights_on_at_night'
 
   trigger:
     - platform: state
@@ -151,18 +148,48 @@
       state: 'on'
 
   action:
-    - service: scene.turn_on
-      entity_id: scene.vacation
+    - delay:
+        minutes: '{{ range(2, 20) | random }}'
+    - service: light.turn_on
+      entity_id:
+        - light.kitchen_sink
+      data:
+        brightness_pct: 50
+    - delay:
+        minutes: '{{ range(2, 28) | random }}'
+    - service: light.turn_on
+      entity_id:
+        - light.living_room_lamps
+      data:
+        brightness_pct: 75
+        transition: 120
+    - delay:
+        minutes: '{{ range(2, 59) | random }}'
+    - service: light.turn_on
+      entity_id:
+        - light.bedroom_ceiling
+      data:
+        brightness_pct: 25
+        transition: 60
+    - delay:
+        minutes: '{{ range(2, 45) | random }}'
+    - service: light.turn_on
+      entity_id:
+        - light.USER1_office_desk_lamp
+        - light.USER1_office_desk_accent
+      data:
+        brightness_pct: 80
 
         ##########################################################
-        ## Vacation Mode Lights off at Midnight
+        ## Vacation Mode Lights off at Night
         ##########################################################
 
-- alias: Vacation - Lights Off Midnight
+- alias: Vacation - Lights Off at Night
+  id: 'vacation_lights_off_at_night'
 
   trigger:
     - platform: time
-      at: '23:16'
+      at: '21:30:00'
 
   condition:
     - condition: state
@@ -170,64 +197,24 @@
       state: 'on'
 
   action:
+    - delay:
+        minutes: '{{ range(2, 32) | random }}'
     - service: light.turn_off
       entity_id:
         - light.kitchen_sink
+    - delay:
+        minutes: '{{ range(2, 59) | random }}'
     - service: light.turn_off
       entity_id:
-        light.living_room_lamps
-
-        ##########################################################
-        ## Vacation Mode Lights off at 10p
-        ##########################################################
-
-- alias: Vacation - Lights Off 10p
-
-  trigger:
-    - platform: time
-      at: '22:13'
-
-  condition:
-    - condition: state
-      entity_id: input_boolean.vacation_mode
-      state: 'on'
-
-  action:
+        - light.living_room_lamps
+    - delay:
+        minutes: '{{ range(2, 30) | random }}'
     - service: light.turn_off
       entity_id:
-        - light.bedroom_closet_ceiling
+        - light.bedroom_ceiling
+    - delay:
+        minutes: '{{ range(2, 45) | random }}'
     - service: light.turn_off
       entity_id:
-        - light.USER1_s_office_ceiling
-
-        ##########################################################
-        ## Vacation Mode Disable Automations
-        ##########################################################
-
-- alias: Vacation - Disable Automation
-
-  trigger:
-    - platform: state
-      entity_id: input_boolean.vacation_mode
-      from: 'off'
-      to: 'on'
-
-  action:
-    - service: scene.turn_on
-      entity_id: scene.vacation_disable_automation
-
-        ##########################################################
-        ## Vacation Mode Enable Automations
-        ##########################################################
-
-- alias: Vacation - Enable Automation
-
-  trigger:
-    - platform: state
-      entity_id: input_boolean.vacation_mode
-      from: 'on'
-      to: 'off'
-
-  action:
-    - service: scene.turn_on
-      entity_id: scene.vacation_enable_automation
+        - light.USER1_office_desk_lamp
+        - light.USER1_office_desk_accent

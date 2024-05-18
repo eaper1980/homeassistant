@@ -1,0 +1,441 @@
+#################################################################
+## Fan Automations
+#################################################################
+
+#################################################################
+## Pico Remotes
+#################################################################
+
+  #################################################################
+  ## Living Room Fans On Pico Remote
+  #################################################################
+
+- alias: Fan - Living Room Fans On Pico Remote
+  id: 'fan_living_room_fans_on_pico_remote'
+
+  trigger:
+    - platform: event
+      event_type: lutron_caseta_button_event
+      event_data:
+        serial: 49229391
+        button_number: 3
+        action: press
+
+  condition:
+    - condition: state
+      entity_id: fan.living_room_fans
+      state: 'off'
+
+  action:
+    - service: fan.turn_on
+      entity_id:
+        - fan.living_room_east
+        - fan.living_room_west
+    - delay:
+        seconds: 1
+
+  #################################################################
+  ## Living Room Fans Off Pico Remote
+  #################################################################
+
+- alias: Fan - Living Room Fans Off Pico Remote
+  id: 'fan_living_room_fans_off_pico_remote'
+
+  trigger:
+    - platform: event
+      event_type: lutron_caseta_button_event
+      event_data:
+        serial: 49229391
+        button_number: 3
+        action: press
+
+  condition:
+    - condition: state
+      entity_id: fan.living_room_fans
+      state: 'on'
+
+  action:
+    - service: fan.turn_off
+      entity_id:
+        - fan.living_room_east
+        - fan.living_room_west
+    - delay:
+        seconds: 1
+
+  #################################################################
+  ## Living Room Fans Off to On Pico Remote Raise or Lower
+  #################################################################
+
+- alias: Fan - Living Room Fans Off to On Pico Remote Raise or Lower
+  id: 'fan_living_room_fans_off_to_on_pico_remote_raise_or_lower'
+
+  trigger:
+    - platform: event
+      event_type: lutron_caseta_button_event
+      event_data:
+        serial: 49229391
+        button_number: 5
+        action: press
+    - platform: event
+      event_type: lutron_caseta_button_event
+      event_data:
+        serial: 49229391
+        button_number: 6
+        action: press
+
+  condition:
+    - condition: state
+      entity_id: fan.living_room_fans
+      state: 'off'
+
+  action:
+    - service: fan.turn_on
+      entity_id:
+        - fan.living_room_east
+        - fan.living_room_west
+    - delay:
+        seconds: 1
+
+  #################################################################
+  ## Living Room Fans Low to Med Pico Remote Raise
+  #################################################################
+
+- alias: Fan - Living Room Fans Low to Med Pico Remote Raise
+  id: 'fan_living_room_fans_low_to_med_pico_remote_raise'
+
+  trigger:
+    - platform: event
+      event_type: lutron_caseta_button_event
+      event_data:
+        serial: 49229391
+        button_number: 5
+        action: press
+
+  condition:
+    - condition: state
+      entity_id: fan.living_room_fans
+      state: 'on'
+    - condition: template
+      value_template: "{{is_state_attr('fan.living_room_fans', 'percentage', 33)}}"
+
+  action:
+    - service: fan.set_percentage
+      data:
+        entity_id:
+          - fan.living_room_east
+          - fan.living_room_west
+        percentage: 66
+    - delay:
+        seconds: 1
+
+  #################################################################
+  ## Living Room Fans Med to High Pico Remote Raise
+  #################################################################
+
+- alias: Fan - Living Room Fans Med to High Pico Remote Raise
+  id: 'fan_living_room_fans_med_to_high_pico_remote_raise'
+
+  trigger:
+    - platform: event
+      event_type: lutron_caseta_button_event
+      event_data:
+        serial: 49229391
+        button_number: 5
+        action: press
+
+  condition:
+    - condition: state
+      entity_id: fan.living_room_fans
+      state: 'on'
+    - condition: template
+      value_template: "{{is_state_attr('fan.living_room_fans', 'percentage', 66)}}"
+
+  action:
+    - service: fan.set_percentage
+      data:
+        entity_id:
+          - fan.living_room_east
+          - fan.living_room_west
+        percentage: 100
+    - delay:
+        seconds: 1
+
+  #################################################################
+  ## Living Room Fans High to Med Pico Remote Lower
+  #################################################################
+
+- alias: Fan - Living Room Fans High to Med Pico Remote Lower
+  id: 'fan_living_room_fans_high_to_med_pico_remote_lower'
+
+  trigger:
+    - platform: event
+      event_type: lutron_caseta_button_event
+      event_data:
+        serial: 49229391
+        button_number: 6
+        action: press
+
+  condition:
+    - condition: state
+      entity_id: fan.living_room_fans
+      state: 'on'
+    - condition: template
+      value_template: "{{is_state_attr('fan.living_room_fans', 'percentage', 100)}}"
+
+  action:
+    - service: fan.set_percentage
+      data:
+        entity_id:
+          - fan.living_room_east
+          - fan.living_room_west
+        percentage: 66
+    - delay:
+        seconds: 1
+
+  #################################################################
+  ## Living Room Fans Med to Low Pico Remote Lower
+  #################################################################
+
+- alias: Fan - Living Room Fans Med to Low Pico Remote Lower
+  id: 'fan_living_room_fans_med_to_low_pico_remote_lower'
+
+  trigger:
+    - platform: event
+      event_type: lutron_caseta_button_event
+      event_data:
+        serial: 49229391
+        button_number: 6
+        action: press
+
+  condition:
+    - condition: state
+      entity_id: fan.living_room_fans
+      state: 'on'
+    - condition: template
+      value_template: "{{is_state_attr('fan.living_room_fans', 'percentage', 66)}}"
+
+  action:
+    - service: fan.set_percentage
+      data:
+        entity_id:
+          - fan.living_room_east
+          - fan.living_room_west
+        percentage: 33
+    - delay:
+        seconds: 1
+
+  #################################################################
+  ## Living Room Fans Low to Off Pico Remote Lower
+  #################################################################
+
+- alias: Fan - Living Room Fans Low to Off Pico Remote Lower
+  id: 'fan_living_room_fans_low_to_off_pico_remote_lower'
+
+  trigger:
+    - platform: event
+      event_type: lutron_caseta_button_event
+      event_data:
+        serial: 49229391
+        button_number: 6
+        action: press
+
+  condition:
+    - condition: state
+      entity_id: fan.living_room_fans
+      state: 'on'
+    - condition: template
+      value_template: "{{is_state_attr('fan.living_room_fans', 'percentage', 33)}}"
+
+  action:
+    - service: fan.turn_off
+      entity_id:
+        - fan.living_room_east
+        - fan.living_room_west
+    - delay:
+        seconds: 1
+
+  #################################################################
+  ## Living Room West Fan Off to On Pico Remote Raise or Lower
+  #################################################################
+
+- alias: Fan - Living Room West Fan Off to On Pico Remote Raise or Lower
+  id: 'fan_living_room_west_fan_off_to_on_pico_remote_raise_or_lower'
+
+  trigger:
+    - platform: event
+      event_type: lutron_caseta_button_event
+      event_data:
+        serial: 48491915
+        button_number: 5
+        action: press
+    - platform: event
+      event_type: lutron_caseta_button_event
+      event_data:
+        serial: 48491915
+        button_number: 6
+        action: press
+
+  condition:
+    - condition: state
+      entity_id: fan.living_room_west
+      state: 'off'
+
+  action:
+    - service: fan.turn_on
+      entity_id:
+        - fan.living_room_west
+    - delay:
+        seconds: 1
+
+  #################################################################
+  ## Living Room West Fan Low to Med Pico Remote Raise
+  #################################################################
+
+- alias: Fan - Living Room West Fan Low to Med Pico Remote Raise
+  id: 'fan_living_room_west_fan_low_to_med_pico_remote_raise'
+
+  trigger:
+    - platform: event
+      event_type: lutron_caseta_button_event
+      event_data:
+        serial: 48491915
+        button_number: 5
+        action: press
+
+  condition:
+    - condition: state
+      entity_id: fan.living_room_west
+      state: 'on'
+    - condition: template
+      value_template: "{{is_state_attr('fan.living_room_west', 'percentage', 33)}}"
+
+  action:
+    - service: fan.set_percentage
+      data:
+        entity_id:
+          - fan.living_room_west
+        percentage: 66
+    - delay:
+        seconds: 1
+
+  #################################################################
+  ## Living Room West Fan Med to High Pico Remote Raise
+  #################################################################
+
+- alias: Fan - Living Room West Fan Med to High Pico Remote Raise
+  id: 'fan_living_room_west_fan_med_to_high_pico_remote_raise'
+
+  trigger:
+    - platform: event
+      event_type: lutron_caseta_button_event
+      event_data:
+        serial: 48491915
+        button_number: 5
+        action: press
+
+  condition:
+    - condition: state
+      entity_id: fan.living_room_west
+      state: 'on'
+    - condition: template
+      value_template: "{{is_state_attr('fan.living_room_west', 'percentage', 66)}}"
+
+  action:
+    - service: fan.set_percentage
+      data:
+        entity_id:
+          - fan.living_room_west
+        percentage: 100
+    - delay:
+        seconds: 1
+
+  #################################################################
+  ## Living Room West Fan High to Med Pico Remote Lower
+  #################################################################
+
+- alias: Fan - Living Room West Fan High to Med Pico Remote Lower
+  id: 'fan_living_room_west_fan_high_to_med_pico_remote_lower'
+
+  trigger:
+    - platform: event
+      event_type: lutron_caseta_button_event
+      event_data:
+        serial: 48491915
+        button_number: 6
+        action: press
+
+  condition:
+    - condition: state
+      entity_id: fan.living_room_west
+      state: 'on'
+    - condition: template
+      value_template: "{{is_state_attr('fan.living_room_west', 'percentage', 100)}}"
+
+  action:
+    - service: fan.set_percentage
+      data:
+        entity_id:
+          - fan.living_room_west
+        percentage: 66
+    - delay:
+        seconds: 1
+
+  #################################################################
+  ## Living Room West Fan Med to Low Pico Remote Lower
+  #################################################################
+
+- alias: Fan - Living Room West Fan Med to Low Pico Remote Lower
+  id: 'fan_living_room_west_fan_med_to_low_pico_remote_lower'
+
+  trigger:
+    - platform: event
+      event_type: lutron_caseta_button_event
+      event_data:
+        serial: 48491915
+        button_number: 6
+        action: press
+
+  condition:
+    - condition: state
+      entity_id: fan.living_room_west
+      state: 'on'
+    - condition: template
+      value_template: "{{is_state_attr('fan.living_room_west', 'percentage', 66)}}"
+
+  action:
+    - service: fan.set_percentage
+      data:
+        entity_id:
+          - fan.living_room_west
+        percentage: 33
+    - delay:
+        seconds: 1
+
+  #################################################################
+  ## Living Room West Fan Low to Off Pico Remote Lower
+  #################################################################
+
+- alias: Fan - Living Room West Fan Low to Off Pico Remote Lower
+  id: 'fan_living_room_west_fan_low_to_off_pico_remote_lower'
+
+  trigger:
+    - platform: event
+      event_type: lutron_caseta_button_event
+      event_data:
+        serial: 48491915
+        button_number: 6
+        action: press
+
+  condition:
+    - condition: state
+      entity_id: fan.living_room_west
+      state: 'on'
+    - condition: template
+      value_template: "{{is_state_attr('fan.living_room_west', 'percentage', 33)}}"
+
+  action:
+    - service: fan.turn_off
+      entity_id:
+        - fan.living_room_west
+    - delay:
+        seconds: 1

@@ -2,11 +2,43 @@
 ## Network
 #################################################################
 
+        ##########################################################
+        ## Re-Enable Pi-hole After 15 Mins
+        ##########################################################
+
+- alias: Network - Re-Enable Pi-hole After 15 Mins
+  id: 'network_reenable_pihole_after_15_mins'
+
+  trigger:
+    - platform: state
+      entity_id: switch.pihole
+      from: 'on'
+      to: 'off'
+      for:
+        hours: 0
+        minutes: 15
+        seconds: 0
+
+  condition:
+    - condition: state
+      entity_id: switch.pihole
+      state: 'off'
+
+  action:
+    - service: homeassistant.turn_on
+      entity_id:
+        - switch.pihole
+
+#################################################################
+## Notifications
+#################################################################
+
     #################################################################
     ## WAN Down Notification
     #################################################################
 
 - alias: Network - WAN Down Notification
+  id: 'network_wan_down_notification'
 
   trigger:
     - platform: state
@@ -16,23 +48,26 @@
         hours: 0
         minutes: 1
         seconds: 0
+
   condition:
     - condition: state
       entity_id: input_boolean.disable_notifications
       state: 'off'
 
   action:
-    - service: persistent_notification.create
+    - service: notify.USER1_devices
       data:
-        message: "Internet Down"
-        title: "WAN"
-        notification_id: "1"
+        message: Internet is Down!
+        data:
+          tag: network
+          group: network
 
     #################################################################
     ## WAN Up Notification
     #################################################################
 
 - alias: Network - WAN Up Notification
+  id: 'network_wan_up_notification'
 
   trigger:
     - platform: state
@@ -43,186 +78,16 @@
         hours: 0
         minutes: 1
         seconds: 0
+
   condition:
     - condition: state
       entity_id: input_boolean.disable_notifications
       state: 'off'
 
   action:
-    - service: persistent_notification.create
+    - service: notify.USER1_devices
       data:
-        message: "Internet Up"
-        title: "WAN"
-        notification_id: "1"
-
-        ##########################################################
-        ## WAN Down Power on at&t Router
-        ##########################################################
-
-- alias: Network - WAN Down Power on att Router
-
-  trigger:
-    - platform: state
-      entity_id: binary_sensor.wan
-      to: 'off'
-      for:
-        hours: 0
-        minutes: 1
-        seconds: 0
-
-  action:
-    - service: switch.turn_on
-      entity_id:
-        - switch.att_router
-    - service: notify.ios_USER1s_iphone
-      data:
-        message: Internet is Down, Turning on at&t Router
-
-        ##########################################################
-        ## WAN Up Power off at&t Router
-        ##########################################################
-
-- alias: Network - WAN Up Power off att Router
-
-  trigger:
-    - platform: state
-      entity_id: binary_sensor.wan
-      to: 'on'
-      for:
-        hours: 0
-        minutes: 30
-        seconds: 0
-
-  action:
-    - service: switch.turn_off
-      entity_id:
-        - switch.att_router
-    - service: notify.ios_USER1s_iphone
-      data:
-        message: Internet is Up, Shutting off at&t Router
-
-        #################################################################
-        ## WAN Down on Startup Turn on at&t Router
-        #################################################################
-
-- alias: network - WAN Down on Startup Turn on at&t Router
-
-  trigger:
-    - platform: homeassistant
-      event: start
-
-  condition:
-    - condition: state
-      entity_id: binary_sensor.wan
-      state: 'off'
-
-  action:
-    - service: switch.turn_on
-      entity_id:
-        - switch.att_router
-
-        ##########################################################
-        ## Turn on at&t Router in Vacation Mode
-        ##########################################################
-
-- alias: network - Turn on at&t Router in Vacation Mode
-
-  trigger:
-    - platform: state
-      entity_id: input_boolean.vacation_mode
-      to: 'on'
-
-  condition:
-    - condition: state
-      entity_id: input_boolean.disable_home_away
-      state: 'off'
-
-  action:
-    - service: switch.turn_on
-      entity_id: switch.att_router
-
-        ##########################################################
-        ## Turn off at&t Router after Vacation Mode
-        ##########################################################
-
-- alias: network - Turn off at&t Router after Vacation Mode
-
-  trigger:
-    - platform: state
-      entity_id: input_boolean.vacation_mode
-      to: 'off'
-
-  condition:
-    - condition: state
-      entity_id: input_boolean.disable_home_away
-      state: 'off'
-
-  action:
-    - service: switch.turn_off
-      entity_id: switch.att_router
-
-        ##########################################################
-        ## Turn on at&t Router in Vacation Mode
-        ##########################################################
-
-- alias: network - Turn on at&t Router in Vacation Mode
-
-  trigger:
-    - platform: state
-      entity_id: input_boolean.vacation_mode
-      to: 'on'
-
-  condition:
-    - condition: state
-      entity_id: input_boolean.disable_home_away
-      state: 'off'
-
-  action:
-    - service: switch.turn_on
-      entity_id: switch.att_router
-
-        ##########################################################
-        ## Household Away Turn on Camera POE
-        ##########################################################
-
-- alias: Network - Household Away Turn on Camera POE
-
-  trigger:
-    - platform: state
-      entity_id: group.household
-      from: 'home'
-      to: 'not_home'
-
-  condition:
-    - condition: state
-      entity_id: input_boolean.disable_home_away
-      state: 'off'
-
-  action:
-    - service: switch.turn_on
-      entity_id:
-        - switch.living_room_camera
-        - switch.basement_camera
-
-        ##########################################################
-        ## Household Home Turn off Camera POE
-        ##########################################################
-
-- alias: Network - Household Home Turn off Camera POE
-
-  trigger:
-    - platform: state
-      entity_id: group.household
-      from: 'not_home'
-      to: 'home'
-
-  condition:
-    - condition: state
-      entity_id: input_boolean.disable_home_away
-      state: 'off'
-
-  action:
-    - service: switch.turn_off
-      entity_id:
-        - switch.living_room_camera
-        - switch.basement_camera
+        message: Internet is Up
+        data:
+          tag: network
+          group: network

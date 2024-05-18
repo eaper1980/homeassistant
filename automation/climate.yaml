@@ -3,46 +3,11 @@
 #################################################################
 
         ##########################################################
-        ## Thermostat on Demand Home
-        ##########################################################
-
-- alias: Climate - On Demand Home
-
-  trigger:
-    - platform: state
-      entity_id: input_boolean.thermostat_away
-      from: 'on'
-      to: 'off'
-
-  action:
-    - service: climate.set_hold_mode
-      data:
-        entity_id: climate.main_floor
-        hold_mode: None
-
-        ##########################################################
-        ## Thermostat on Demand Away
-        ##########################################################
-
-- alias: Climate - On Demand Away
-
-  trigger:
-    - platform: state
-      entity_id: input_boolean.thermostat_away
-      from: 'off'
-      to: 'on'
-
-  action:
-    - service: climate.set_away_mode
-      data:
-        entity_id: climate.main_floor
-        away_mode: true
-
-        ##########################################################
         ## Set Thermostat Home
         ##########################################################
 
 - alias: Climate - Home
+  id: 'climate_home'
 
   trigger:
     - platform: state
@@ -57,18 +22,15 @@
     - condition: state
       entity_id: input_boolean.disable_climate
       state: 'off'
+    - condition: state
+      entity_id: group.household
+      state: 'home'
 
   action:
     - service: homeassistant.turn_off
       entity_id: input_boolean.thermostat_away
-#     re-enable Summer or Winter Mode
-    - service: homeassistant.turn_on
-      entity_id: group.summer_mode
-#    - service: homeassistant.turn_on
-#      entity_id: group.winter_mode
-#    - service: homeassistant.turn_on
-#      entity_id: input_boolean.spring_fall_mode
-    - service: climate.ecobee_set_fan_min_on_time
+    - delay: '00:00:30'
+    - service: ecobee.set_fan_min_on_time
       data:
         entity_id: climate.main_floor
         fan_min_on_time: '15'
@@ -78,6 +40,7 @@
         ##########################################################
 
 - alias: Climate - Away
+  id: 'climate_away'
 
   trigger:
     - platform: state
@@ -85,8 +48,8 @@
       from: 'home'
       to: 'not_home'
       for:
-        hours: 0
-        minutes: 30
+        hours: 1
+        minutes: 0
         seconds: 0
 
   condition:
@@ -96,33 +59,148 @@
     - condition: state
       entity_id: input_boolean.disable_climate
       state: 'off'
+    - condition: state
+      entity_id: input_boolean.guest_mode
+      state: 'off'
+    - condition: not
+      conditions:
+      - condition: state
+        entity_id: group.household
+        state: 'home'
+    - condition: numeric_state
+      entity_id: sensor.REDACTED_forecasted_temperature_high
+      below: 96
+    - condition: numeric_state
+      entity_id: sensor.REDACTED_forecasted_temperature_low
+      above: 15
 
   action:
+    - service: notify.USER1_devices
+      data:
+        message: House has been empty for an hour, shutting Off HVAC
+        data:
+          tag: climate
+          group: climate
     - service: homeassistant.turn_on
       entity_id: input_boolean.thermostat_away
-    - service: homeassistant.turn_off
-      entity_id: group.summer_mode
-    - service: homeassistant.turn_off
-      entity_id: group.winter_mode
-    - service: homeassistant.turn_off
-      entity_id: input_boolean.spring_fall_mode
-    - service: notify.ios_USER1s_iphone
-      data:
-        message: House has been empty for 30 mins, shutting off HVAC
-    - service: climate.ecobee_set_fan_min_on_time
+    - delay: '00:00:30'
+    - service: ecobee.set_fan_min_on_time
       data:
         entity_id: climate.main_floor
         fan_min_on_time: '0'
 
         ##########################################################
-        ## Turn Thermostat on Summer
+        ## Turn Off Humidifier When Water Main Shuts Off
         ##########################################################
 
-- alias: Climate - Turn on Summer
+- alias: Climate - Turn Off Humidifier When Water Main Shuts Off
+  id: 'climate_turn_off_humidifier_when_water_main_shuts_off'
+
+  trigger:
+    - platform: state
+      entity_id: valve.water_main
+      from: 'open'
+      to: 'closed'
+      for:
+        hours: 0
+        minutes: 5
+        seconds: 0
+  
+  condition:
+    - condition: state
+      entity_id: humidifier.main_floor
+      state: 'on'
+    - condition: state
+      entity_id: input_boolean.disable_climate
+      state: 'off'
+
+  action:
+    - service: humidifier.set_mode
+      data:
+        mode: "off"
+      target:
+        entity_id: humidifier.main_floor
+
+        ##########################################################
+        ## Turn On Humidifier When Water Main Turns On
+        ##########################################################
+
+- alias: Climate - Turn On Humidifier When Water Main Turns On
+  id: 'climate_turn_on_humidifier_when_water_main_turns_on'
+
+  trigger:
+    - platform: state
+      entity_id: valve.water_main
+      from: 'closed'
+      to: 'open'
+      for:
+        hours: 0
+        minutes: 15
+        seconds: 0
+  
+  condition:
+    - condition: state
+      entity_id: humidifier.main_floor
+      state: 'off'
+    - condition: state
+      entity_id: input_boolean.disable_climate
+      state: 'off'
+
+  action:
+    - service: humidifier.set_mode
+      data:
+        mode: "auto"
+      target:
+        entity_id: humidifier.main_floor
+
+        ##########################################################
+        ## Thermostat On Demand Home
+        ##########################################################
+
+- alias: Climate - On Demand Home
+  id: 'climate_on_demand_home'
+
+  trigger:
+    - platform: state
+      entity_id: input_boolean.thermostat_away
+      from: 'on'
+      to: 'off'
+
+  action:
+    - service: ecobee.resume_program
+      data:
+        entity_id: climate.main_floor
+        resume_all: true
+
+        ##########################################################
+        ## Thermostat On Demand Away
+        ##########################################################
+
+- alias: Climate - On Demand Away
+  id: 'climate_on_demand_away'
+
+  trigger:
+    - platform: state
+      entity_id: input_boolean.thermostat_away
+      from: 'off'
+      to: 'on'
+
+  action:
+    - service: climate.set_preset_mode
+      data:
+        entity_id: climate.main_floor
+        preset_mode: 'away_indefinitely'
+
+        ##########################################################
+        ## Turn Thermostat On Summer
+        ##########################################################
+
+- alias: Climate - Turn Thermostat On Summer
+  id: 'climate_turn_thermostat_on_summer'
 
   trigger:
     - platform: numeric_state
-      entity_id: sensor.dark_sky_temperature
+      entity_id: sensor.REDACTED_temperature
       above: 68
       for:
         hours: 0
@@ -133,32 +211,36 @@
     - condition: state
       entity_id: input_boolean.disable_climate
       state: 'off'
-    - condition: numeric_state
-      entity_id: 'sensor.uptime'
-      above: '0.01'
+    - condition: state
+      entity_id: group.household
+      state: 'home'
     - condition: state
       entity_id: input_boolean.thermostat_away
       state: 'on'
+    - condition: state
+      entity_id: sensor.season
+      state: 'summer'
 
   action:
     - service: homeassistant.turn_off
       entity_id: input_boolean.thermostat_away
-    - service: notify.ios_USER1s_iphone
+    - service: notify.USER1_devices
       data:
-        message: Outside temp above 68 turning on AC
-    - service: notify.ios_USER2s_iphone
-      data:
-        message: Outside temp above 68 turning on AC
+        message: Outside temp above 68 turning On AC
+        data:
+          tag: climate
+          group: climate
 
         ##########################################################
-        ## Turn Thermostat off Summer
+        ## Turn Thermostat Off Summer
         ##########################################################
 
-- alias: Climate - Turn off Summer
+- alias: Climate - Turn Thermostat Off Summer
+  id: 'climate_turn_thermostat_off_summer'
 
   trigger:
     - platform: numeric_state
-      entity_id: sensor.dark_sky_temperature
+      entity_id: sensor.REDACTED_temperature
       below: 68
       for:
         hours: 0
@@ -167,37 +249,41 @@
 
   condition:
     - condition: state
-      entity_id: group.friends_and_family
-      state: 'not_home'
+      entity_id: group.household
+      state: 'home'
     - condition: state
       entity_id: input_boolean.disable_climate
       state: 'off'
     - condition: state
       entity_id: input_boolean.thermostat_away
       state: 'off'
-    - condition: numeric_state
-      entity_id: 'sensor.uptime'
-      above: '0.01'
+    - condition: state
+      entity_id: sensor.season
+      state: 'summer'
+    - condition: state
+      entity_id: input_boolean.guest_mode
+      state: 'off'
 
   action:
     - service: homeassistant.turn_on
       entity_id: input_boolean.thermostat_away
-    - service: notify.ios_USER1s_iphone
+    - service: notify.USER1_devices
       data:
-        message: Outside temp below 68 shutting off AC
-    - service: notify.ios_USER2s_iphone
-      data:
-        message: Outside temp below 68 shutting off AC
+        message: Outside temp below 68 shutting Off AC
+        data:
+          tag: climate
+          group: climate
 
         ##########################################################
-        ## Turn Thermostat on Winter
+        ## Turn Thermostat On Winter
         ##########################################################
 
-- alias: Climate - Turn on Winter
+- alias: Climate - Turn Thermostat On Winter
+  id: 'climate_turn_thermostat_on_winter'
 
   trigger:
     - platform: numeric_state
-      entity_id: sensor.dark_sky_temperature
+      entity_id: sensor.REDACTED_temperature
       below: 65
       for:
         hours: 0
@@ -206,34 +292,38 @@
 
   condition:
     - condition: state
+      entity_id: group.household
+      state: 'home'
+    - condition: state
       entity_id: input_boolean.disable_climate
       state: 'off'
-    - condition: numeric_state
-      entity_id: 'sensor.uptime'
-      above: '0.01'
     - condition: state
       entity_id: input_boolean.thermostat_away
       state: 'on'
+    - condition: state
+      entity_id: sensor.season
+      state: 'winter'
 
   action:
     - service: homeassistant.turn_off
       entity_id: input_boolean.thermostat_away
-    - service: notify.ios_USER1s_iphone
+    - service: notify.USER1_devices
       data:
-        message: Outside temp below 65 turning on Heat
-    - service: notify.ios_USER2s_iphone
-      data:
-        message: Outside temp below 65 turning on Heat
+        message: Outside temp below 65 turning On Heat
+        data:
+          tag: climate
+          group: climate
 
         ##########################################################
-        ## Turn Thermostat off Winter
+        ## Turn Thermostat Off Winter
         ##########################################################
 
-- alias: Climate - Turn off Winter
+- alias: Climate - Turn Thermostat Off Winter
+  id: 'climate_turn_thermostat_off_winter'
 
   trigger:
     - platform: numeric_state
-      entity_id: sensor.dark_sky_temperature
+      entity_id: sensor.REDACTED_temperature
       above: 65
       for:
         hours: 0
@@ -242,78 +332,215 @@
 
   condition:
     - condition: state
-      entity_id: group.friends_and_family
-      state: 'not_home'
+      entity_id: group.household
+      state: 'home'
     - condition: state
       entity_id: input_boolean.disable_climate
       state: 'off'
-    - condition: numeric_state
-      entity_id: 'sensor.uptime'
-      above: '0.01'
     - condition: state
       entity_id: input_boolean.thermostat_away
+      state: 'off'
+    - condition: state
+      entity_id: sensor.season
+      state: 'winter'
+    - condition: state
+      entity_id: input_boolean.guest_mode
       state: 'off'
 
   action:
     - service: homeassistant.turn_on
       entity_id: input_boolean.thermostat_away
-    - service: notify.ios_USER1s_iphone
+    - service: notify.USER1_devices
       data:
-        message: Outside temp above 65 turning off Heat
-    - service: notify.ios_USER2s_iphone
-      data:
-        message: Outside temp above 65 turning off Heat
+        message: Outside temp above 65 turning Off Heat
+        data:
+          tag: climate
+          group: climate
 
         ##########################################################
-        ## Disable Summer / Winter Mode on Start
+        ## Turn Thermostat On Spring/Fall
         ##########################################################
 
-- alias: Climate - Disable Summer or Winter Mode on Start
+- alias: Climate - Turn Thermostat On Spring/Fall
+  id: 'climate_turn_thermostat_on_spring_fall'
 
   trigger:
-    - platform: homeassistant
-      event: start
+    - platform: numeric_state
+      entity_id: sensor.REDACTED_temperature
+      below: 65
+      for:
+        hours: 0
+        minutes: 30
+        seconds: 0
+    - platform: numeric_state
+      entity_id: sensor.REDACTED_temperature
+      above: 82
+      for:
+        hours: 0
+        minutes: 30
+        seconds: 0
 
   condition:
     - condition: state
+      entity_id: group.household
+      state: 'home'
+    - condition: state
       entity_id: input_boolean.disable_climate
+      state: 'off'
+    - condition: state
+      entity_id: input_boolean.thermostat_away
+      state: 'on'
+    - condition: or
+      conditions:
+      - condition: state
+        entity_id: sensor.season
+        state: 'spring'
+      - condition: state
+        entity_id: sensor.season
+        state: 'autumn'
+    - condition: state
+      entity_id: input_boolean.guest_mode
       state: 'off'
 
   action:
-#     Disable Summer or Winter Mode
     - service: homeassistant.turn_off
-      entity_id: group.summer_mode
-#    - service: homeassistant.turn_off
-#      entity_id: group.winter_mode
-    - service: homeassistant.turn_off
-      entity_id: input_boolean.spring_fall_mode
+      entity_id: input_boolean.thermostat_away
+    - service: notify.USER1_devices
+      data:
+        message: Outside temp below 65 or above 78 turning On HVAC
+        data:
+          tag: climate
+          group: climate
+
+        ##########################################################
+        ## Turn Thermostat Off Spring/Fall
+        ##########################################################
+
+- alias: Climate - Turn Thermostat Off Spring/Fall
+  id: 'climate_turn_thermostat_off_spring_fall'
+
+  trigger:
+    - platform: numeric_state
+      entity_id: sensor.REDACTED_temperature
+      above: 65
+      below: 75
+      for:
+        hours: 0
+        minutes: 30
+        seconds: 0
+
+  condition:
+    - condition: state
+      entity_id: group.household
+      state: 'home'
+    - condition: state
+      entity_id: input_boolean.disable_climate
+      state: 'off'
+    - condition: state
+      entity_id: input_boolean.thermostat_away
+      state: 'off'
+    - condition: or
+      conditions:
+      - condition: state
+        entity_id: sensor.season
+        state: 'spring'
+      - condition: state
+        entity_id: sensor.season
+        state: 'autumn'
+
+  action:
+    - service: homeassistant.turn_on
+      entity_id: input_boolean.thermostat_away
+    - service: notify.USER1_devices
+      data:
+        message: Outside temp above 65 or below 78 turning Off HVAC
+        data:
+          tag: climate
+          group: climate
+
+        ##########################################################
+        ## Winter Season Turn On Heat
+        ##########################################################
+
+- alias: Climate - Winter Season Turn On Heat
+  id: 'climate_winter_season_turn_on_heat'
+
+  trigger:
+    - platform: state
+      entity_id: sensor.season
+      to: 'winter'
+
+  action:
+    - service: climate.set_hvac_mode
+      data:
+        entity_id: climate.main_floor
+        hvac_mode: heat
+
+        ##########################################################
+        ## Spring Season HVAC Auto
+        ##########################################################
+
+- alias: Climate - Spring Season HVAC Auto
+  id: 'climate_spring_season_hvac_auto'
+
+  trigger:
+    - platform: state
+      entity_id: sensor.season
+      to: 'spring'
+
+  action:
+    - service: climate.set_hvac_mode
+      data:
+        entity_id: climate.main_floor
+        hvac_mode: 'heat_cool'
+
+        ##########################################################
+        ## Summer Season Turn On Cool
+        ##########################################################
+
+- alias: Climate - Summer Season Turn On Cool
+  id: 'climate_summer_season_turn_on_cool'
+
+  trigger:
+    - platform: state
+      entity_id: sensor.season
+      to: 'summer'
+
+  action:
+    - service: climate.set_hvac_mode
+      data:
+        entity_id: climate.main_floor
+        hvac_mode: cool
+
+        ##########################################################
+        ## Fall Season HVAC Auto
+        ##########################################################
+
+- alias: Climate - Fall Season HVAC Auto
+  id: 'climate_fall_season_hvac_auto'
+
+  trigger:
+    - platform: state
+      entity_id: sensor.season
+      to: 'autumn'
+
+  action:
+    - service: climate.set_hvac_mode
+      data:
+        entity_id: climate.main_floor
+        hvac_mode: 'heat_cool'
 
         ##########################################################
         ## Set Thermostat Home When USER2 Leaves Work
         ##########################################################
 
 - alias: Climate - Set Climate Home When USER2 Leaves Work
+  id: 'climate_set_climate_home_when_USER2_leaves_work'
 
   trigger:
     - platform: state
-      entity_id: device_tracker.USER2s_iphone
-      from: 'REDACTED'
-      to: 'not_home'
-    - platform: state
-      entity_id: device_tracker.USER2s_iphone
-      from: 'REDACTED'
-      to: 'not_home'
-    - platform: state
-      entity_id: device_tracker.USER2s_iphone
-      from: 'REDACTED'
-      to: 'not_home'
-    - platform: state
-      entity_id: device_tracker.USER2s_iphone
-      from: 'REDACTED'
-      to: 'not_home'
-    - platform: state
-      entity_id: device_tracker.USER2s_iphone
-      from: 'REDACTED'
+      entity_id: person.USER2
+      from: 'Work'
       to: 'not_home'
 
   condition:
@@ -323,23 +550,26 @@
     - condition: state
       entity_id: input_boolean.disable_climate
       state: 'off'
-    - condition: state
-      entity_id: group.household
-      state: 'not_home'
+    - condition: not
+      conditions:
+      - condition: state
+        entity_id: group.household
+        state: 'home'
 
   action:
     - service: homeassistant.turn_off
       entity_id: input_boolean.thermostat_away
 
         ##########################################################
-        ## Turn off Thermostat when Door Opens for Extended Period
+        ## Turn Off Thermostat when Door Opens for Extended Period
         ##########################################################
 
-- alias: Climate - Turn off when Door Opens for Extended Period
+- alias: Climate - Turn Off when Door Opens for Extended Period
+  id: 'climate_turn_off_when_door_opens_for_extended_period'
 
   trigger:
     - platform: state
-      entity_id: group.doors
+      entity_id: binary_sensor.doors
       from: 'off'
       to: 'on'
       for:
@@ -352,140 +582,114 @@
       entity_id: group.household
       state: 'home'
     - condition: state
-      entity_id: group.summer_mode
-      state: 'on'
-    - condition: state
       entity_id: input_boolean.disable_climate
       state: 'off'
+    - condition: not
+      conditions:
+      - condition: state
+        entity_id: sensor.season
+        state: 'winter'
 
   action:
     - service: homeassistant.turn_on
       entity_id: input_boolean.thermostat_away
-    - service: notify.ios_USER1s_iphone
+    - service: notify.USER1_devices
       data:
-        message: Door has been left open, shutting off AC
-    - service: notify.ios_USER2s_iphone
-      data:
-        message: Door has been left open, shutting off AC
+        message: Door has been left open, shutting Off AC
+        data:
+          tag: climate
+          group: climate
 
         ##########################################################
         ## Adjust Thermostat for Overnight Guests before Midnight
         ##########################################################
 
-- alias: Climate - Turn on Guest Settings before Midnight
+- alias: Climate - Turn On Guest Settings before Midnight
+  id: 'climate_turn_on_guest_settings_before_midnight'
 
   trigger:
     - platform: time
-      at: '23:31'
+      at: '23:31:00'
 
   condition:
-    - condition: state
-      entity_id: group.household
-      state: 'home'
-    - condition: state
-      entity_id: group.overnight_guests
-      state: 'home'
-    - condition: state
-      entity_id: input_boolean.guest_mode
-      state: 'on'
     - condition: state
       entity_id: input_boolean.thermostat_away
       state: 'off'
     - condition: state
       entity_id: input_boolean.disable_climate
       state: 'off'
+    - condition: state
+      entity_id: group.household
+      state: 'home'
+    - condition: state
+      entity_id: input_boolean.guest_mode
+      state: 'on'
+    - condition: state
+      entity_id: input_boolean.overnight_guest_mode
+      state: 'on'
+    - condition: not
+      conditions:
+      - condition: state
+        entity_id: climate.portable_air_conditioner
+        state: 'cool'
 
   action:
-    - service: climate.set_hold_mode
+    - service: climate.set_preset_mode
       data:
         entity_id: climate.main_floor
-        #Guest = smart3
-        hold_mode: "smart3"
+        preset_mode: 'Guest'
 
         ##########################################################
         ## Adjust Thermostat for Overnight Guests after Midnight
         ##########################################################
 
-- alias: Climate - Turn on Guest Settings after Midnight
+- alias: Climate - Turn On Guest Settings after Midnight
+  id: 'climate_turn_on_guest_settings_after_midnight'
 
   trigger:
     - platform: state
-      entity_id: input_boolean.guest_mode
+      entity_id: input_boolean.overnight_guest_mode
       to: 'on'
 
   condition:
     - condition: time
-      after: '00:00'
-      before: '04:59'
-    - condition: state
-      entity_id: group.household
-      state: 'home'
+      after: '00:00:00'
+      before: '04:59:00'
     - condition: state
       entity_id: input_boolean.disable_climate
-      state: 'off'
-
-  action:
-    - service: climate.set_hold_mode
-      data:
-        entity_id: climate.main_floor
-        #Guest = smart3
-        hold_mode: "smart3"
-
-        ##########################################################
-        ## Set Thermostat Home if USER2 Working at 5a
-        ##########################################################
-
-- alias: Climate - Set Thermostat Home if USER2 Working at 5a
-
-  trigger:
-    - platform: time
-      at: '05:00'
-
-  condition:
-    - condition: state
-      entity_id: input_boolean.thermostat_away
       state: 'off'
     - condition: state
       entity_id: group.household
       state: 'home'
-    - condition: state
-      entity_id: group.winter_mode
-      state: 'on'
-    - condition: state
-      entity_id: input_boolean.USER2_working
-      state: 'on'
-    - condition: state
-      entity_id: input_boolean.disable_home_away
-      state: 'off'
-    - condition: state
-      entity_id: device_tracker.USER2s_iphone
-      state: 'home'
-    - condition: state
-      entity_id: input_boolean.disable_climate
-      state: 'off'
+    - condition: not
+      conditions:
+      - condition: state
+        entity_id: climate.portable_air_conditioner
+        state: 'cool'
 
   action:
-    - service: climate.set_hold_mode
+    - service: climate.set_preset_mode
       data:
         entity_id: climate.main_floor
-        hold_mode: "home"
+        preset_mode: 'Guest'
 
         ##########################################################
         ## Reset Thermostat when USER2 Leaves
         ##########################################################
 
 - alias: Climate - Reset Thermostat when USER2 Leaves
+  id: 'climate_reset_thermostat_when_USER2_leaves'
 
   trigger:
     - platform: state
-      entity_id: device_tracker.USER2s_iphone
+      entity_id: person.USER2
       from: 'home'
       to: 'not_home'
 
   condition:
     - condition: time
-      after: '05:00'
-      before: '07:00'
+      after: '06:00:00'
+      before: '07:30:00'
     - condition: state
       entity_id: input_boolean.disable_home_away
       state: 'off'
@@ -493,23 +697,28 @@
       entity_id: input_boolean.thermostat_away
       state: 'off'
     - condition: state
-      entity_id: input_boolean.USER2_working
-      state: 'on'
-    - condition: state
       entity_id: input_boolean.disable_climate
       state: 'off'
+    - condition: time
+      weekday:
+        - mon
+        - tue
+        - wed
+        - thu
+        - fri
 
   action:
-    - service: climate.set_hold_mode
+    - service: ecobee.resume_program
       data:
         entity_id: climate.main_floor
-        hold_mode: None
+        resume_all: true
 
         ##########################################################
         ## Reset Thermostat Mode After Selection
         ##########################################################
 
 - alias: Climate - Reset Thermostat Mode After Selection
+  id: 'climate_reset_thermostat_mode_after_selection'
 
   trigger:
     - platform: state
@@ -568,6 +777,247 @@
         entity_id: input_select.thermostat_mode
         option: 'None'
 
+        ##########################################################
+        ## Adjust Thermostat to Upstairs Mode at Noon when Hot
+        ##########################################################
+
+- alias: Climate - Adjust Thermostat to Upstairs Mode at Noon when Hot
+  id: 'climate_adjust_thermostat_to_upstairs_mode_at_noon_when_hot'
+
+  trigger:
+    - platform: time
+      at: '12:00:00'
+
+  condition:
+    - condition: state
+      entity_id: input_boolean.thermostat_away
+      state: 'off'
+    - condition: state
+      entity_id: sensor.season
+      state: 'summer'
+    - condition: numeric_state
+      entity_id: sensor.REDACTED_forecasted_temperature_high
+      above: 79
+    - condition: state
+      entity_id: input_boolean.disable_climate
+      state: 'off'
+    - condition: time
+      weekday:
+        - mon
+        - tue
+        - wed
+        - thu
+        - fri
+    - condition: state
+      entity_id: person.USER1
+      state: 'home'
+    - condition: state
+      entity_id: group.household
+      state: 'home'
+    - condition: not
+      conditions:
+      - condition: state
+        entity_id: climate.portable_air_conditioner
+        state: 'cool'
+    - condition: not
+      conditions:
+      - condition: state
+        entity_id: climate.portable_air_conditioner
+        state: 'auto'
+
+  action:
+    - service: climate.set_preset_mode
+      data:
+        entity_id: climate.main_floor
+        preset_mode: 'Upstairs'
+
+        ##########################################################
+        ## Adjust Thermostat to Upstairs Mode when Hot Between 12-7
+        ##########################################################
+
+- alias: Climate - Adjust Thermostat to Upstairs Mode when Hot Between 12-7
+  id: 'climate_adjust_thermostat_to_upstairs_mode_when_hot_between_12_7'
+
+
+  trigger:
+    - platform: numeric_state
+      entity_id: sensor.REDACTED_temperature
+      above: 80
+      for:
+        hours: 0
+        minutes: 30
+        seconds: 0
+
+  condition:
+    - condition: state
+      entity_id: input_boolean.thermostat_away
+      state: 'off'
+    - condition: state
+      entity_id: sensor.season
+      state: 'summer'
+    - condition: state
+      entity_id: input_boolean.disable_climate
+      state: 'off'
+    - condition: time
+      after: '12:00:00'
+      before: '19:00:00'
+    - condition: time
+      weekday:
+        - mon
+        - tue
+        - wed
+        - thu
+        - fri
+    - condition: state
+      entity_id: person.USER1
+      state: 'home'
+    - condition: state
+      entity_id: group.household
+      state: 'home'
+    - condition: not
+      conditions:
+      - condition: state
+        entity_id: climate.portable_air_conditioner
+        state: 'cool'
+    - condition: not
+      conditions:
+      - condition: state
+        entity_id: climate.portable_air_conditioner
+        state: 'auto'
+
+  action:
+    - service: climate.set_preset_mode
+      data:
+        entity_id: climate.main_floor
+        preset_mode: 'Upstairs'
+
+        ##########################################################
+        ## Reset Thermostat at 10p if On Upstairs Mode
+        ##########################################################
+
+- alias: Climate - Reset Thermostat at 10p if On Upstairs Mode
+  id: 'climate_reset_thermostat_at_10p_if_on_upstairs_mode'
+
+  trigger:
+    - platform: time
+      at: '22:00:00'
+
+  condition:
+    - condition: state
+      entity_id: person.USER1
+      state: 'home'
+    - condition: state
+      entity_id: input_boolean.thermostat_away
+      state: 'off'
+    - condition: state
+      entity_id: input_boolean.disable_climate
+      state: 'off'
+    - condition: state
+      entity_id: sensor.thermostat_climate_mode
+      state: 'Upstairs'
+    - condition: time
+      weekday:
+        - mon
+        - tue
+        - wed
+        - thu
+        - fri
+    - condition: state
+      entity_id: input_boolean.guest_mode
+      state: 'off'
+
+  action:
+    - service: ecobee.resume_program
+      data:
+        entity_id: climate.main_floor
+        resume_all: true
+
+        ##########################################################
+        ## Lower Temperature when Guests Visiting
+        ##########################################################
+
+- alias: Climate - Lower Temperature when Guests Visiting
+  id: 'climate_lower_temerature_when_guest_visiting'
+
+  trigger:
+    - platform: state
+      entity_id: input_boolean.guest_mode
+      from: 'off'
+      to: 'on'
+      for:
+        hours: 0
+        minutes: 30
+        seconds: 0
+
+  condition:
+    - condition: time
+      after: '09:00:00'
+      before: '23:30:00'
+    - condition: state
+      entity_id: input_boolean.thermostat_away
+      state: 'off'
+    - condition: state
+      entity_id: input_boolean.disable_climate
+      state: 'off'
+    - condition: state
+      entity_id: group.household
+      state: 'home'
+    - condition: state
+      entity_id: sensor.season
+      state: 'summer'
+    - condition: state
+      entity_id: sensor.thermostat_climate_mode
+      state: 'Home'
+
+  action:
+    - service: climate.set_temperature
+      data:
+        entity_id: climate.main_floor
+        temperature: 73
+
+        ##########################################################
+        ## Reset Temperature when Guests Leaves
+        ##########################################################
+
+- alias: Climate - Reset Temperature when Guests Leaves
+  id: 'climate_reset_temperature_when_guest_leaves'
+
+  trigger:
+    - platform: state
+      entity_id: input_boolean.guest_mode
+      from: 'on'
+      to: 'off'
+      for:
+        hours: 0
+        minutes: 30
+        seconds: 0
+
+  condition:
+    - condition: time
+      after: '09:00:00'
+      before: '23:30:00'
+    - condition: state
+      entity_id: input_boolean.thermostat_away
+      state: 'off'
+    - condition: state
+      entity_id: input_boolean.disable_climate
+      state: 'off'
+    - condition: state
+      entity_id: group.household
+      state: 'home'
+    - condition: state
+      entity_id: sensor.thermostat_climate_mode
+      state: 'Temperature Hold'
+    - condition: state
+      entity_id: sensor.season
+      state: 'summer'
+
+  action:
+    - service: ecobee.resume_program
+      data:
+        entity_id: climate.main_floor
+        resume_all: true
+
 #################################################################
 ## Fireplace
 #################################################################
@@ -577,6 +1027,7 @@
         #################################################################
 
 - alias: Climate - Adjust Thermostat if Fireplace On
+  id: 'climate_adjust_thermostat_if_fireplace_on'
 
   trigger:
     - platform: state
@@ -590,8 +1041,8 @@
 
   condition:
     - condition: state
-      entity_id: group.winter_mode
-      state: 'on'
+      entity_id: sensor.season
+      state: 'winter'
     - condition: state
       entity_id: group.household
       state: 'home'
@@ -603,17 +1054,17 @@
       state: 'off'
 
   action:
-    - service: climate.set_hold_mode
+    - service: climate.set_preset_mode
       data:
         entity_id: climate.main_floor
-        #Fireplace = smart4
-        hold_mode: "smart4"
+        preset_mode: 'Fireplace'
 
         #################################################################
-        ## Reset Thermostat when Fireplace off
+        ## Reset Thermostat when Fireplace Off
         #################################################################
 
-- alias: Climate - Reset Thermostat when Fireplace off
+- alias: Climate - Reset Thermostat when Fireplace Off
+  id: 'climate_reset_thermostat_when_fireplace_off'
 
   trigger:
     - platform: state
@@ -622,13 +1073,13 @@
       to: 'off'
       for:
         hours: 0
-        minutes: 15
+        minutes: 30
         seconds: 0
 
   condition:
     - condition: state
-      entity_id: group.winter_mode
-      state: 'on'
+      entity_id: sensor.season
+      state: 'winter'
     - condition: state
       entity_id: group.household
       state: 'home'
@@ -640,269 +1091,389 @@
       state: 'off'
 
   action:
-    - service: climate.set_hold_mode
+    - service: ecobee.resume_program
       data:
         entity_id: climate.main_floor
-        hold_mode: None
+        resume_all: true
 
+        #################################################################
+        ## Fireplace Warning iOS Notification
+        #################################################################
+
+- alias: Climate - Fireplace On when Nobody Home iOS Notification
+  id: 'climate_fireplace_on_when_nobody_home_ios_notification'
+
+  trigger:
+    - platform: state
+      entity_id: switch.fireplace
+      from: 'off'
+      to: 'on'
+
+  condition:
+    - condition: state
+      entity_id: input_boolean.disable_notifications
+      state: 'off'
+    - condition: not
+      conditions:
+      - condition: state
+        entity_id: group.household
+        state: 'home'
+
+  action:
+    - service: notify.USER1_devices
+      data:
+        message: Fireplace Turned On!
+        data:
+          tag: climate
+          group: climate
+          push:
+          actions:
+            - action: "fireplace_off"
+              title: "Turn Off Fireplace"
+              destructive: true
+              uri: "/lovelace/weatherdashboard"
+
+        #################################################################
+        ## Fireplace On for 4 Hours iOS Notification
+        #################################################################
+
+- alias: Climate - Fireplace On for 4 Hours iOS Notification
+  id: 'climate_fireplace_on_for_4_hours_ios_notification'
+
+  trigger:
+    - platform: state
+      entity_id: switch.fireplace
+      from: 'off'
+      to: 'on'
+      for:
+        hours: 4
+        minutes: 0
+        seconds: 0
+
+  condition:
+    - condition: state
+      entity_id: group.household
+      state: 'home'
+    - condition: state
+      entity_id: input_boolean.disable_notifications
+      state: 'off'
+
+  action:
+    - service: notify.USER1_devices
+      data:
+        message: Fireplace has been On for 4 Hours
+        data:
+          tag: climate
+          group: climate
+          actions:
+            - action: "fireplace_off"
+              title: "Turn Off Fireplace"
+              destructive: true
+              uri: "/lovelace/weatherdashboard"
+
+  #################################################################
+  ## Fireplace On Pico Remote
+  #################################################################
+
+- alias: Climate - Fireplace On Pico Remote
+  id: 'climate_fireplace_on_pico_remote'
+
+  trigger:
+    - platform: event
+      event_type: lutron_caseta_button_event
+      event_data:
+        serial: 43846935
+        button_number: 3
+        action: press
+
+  condition:
+    - condition: state
+      entity_id: switch.fireplace
+      state: 'off'
+
+  action:
+    - service: switch.turn_on
+      entity_id:
+        - switch.fireplace
+    - delay:
+        seconds: 30
+
+  #################################################################
+  ## Fireplace Off Pico Remote
+  #################################################################
+
+- alias: Climate - Fireplace Off Pico Remote
+  id: 'climate_fireplace_off_pico_remote'
+
+  trigger:
+    - platform: event
+      event_type: lutron_caseta_button_event
+      event_data:
+        serial: 43846935
+        button_number: 3
+        action: press
+
+  condition:
+    - condition: state
+      entity_id: switch.fireplace
+      state: 'on'
+
+  action:
+    - service: switch.turn_off
+      entity_id:
+        - switch.fireplace
+    - delay:
+        seconds: 30
+
+  #################################################################
+  ## Fireplace On Living Room West Pico Remote
+  #################################################################
+
+- alias: Climate - Fireplace On Living Room West Pico Remote
+  id: 'climate_fireplace_on_living_room_west_pico_remote'
+
+  trigger:
+    - platform: event
+      event_type: lutron_caseta_button_event
+      event_data:
+        serial: 48491915
+        button_number: 3
+        action: press
+
+  condition:
+    - condition: state
+      entity_id: switch.fireplace
+      state: 'off'
+
+  action:
+    - service: switch.turn_on
+      entity_id:
+        - switch.fireplace
+    - delay:
+        seconds: 30
+
+  #################################################################
+  ## Fireplace Off Living Room West Pico Remote
+  #################################################################
+
+- alias: Climate - Fireplace Off Living Room West Pico Remote
+  id: 'climate_fireplace_off_living_room_west_pico_remote'
+
+  trigger:
+    - platform: event
+      event_type: lutron_caseta_button_event
+      event_data:
+        serial: 48491915
+        button_number: 3
+        action: press
+
+  condition:
+    - condition: state
+      entity_id: switch.fireplace
+      state: 'on'
+
+  action:
+    - service: switch.turn_off
+      entity_id:
+        - switch.fireplace
+    - delay:
+        seconds: 30
 
 #################################################################
 ## Office Fan / Heater / Air Purifier
 #################################################################
 
         ##########################################################
-        ## Turn on Office Fan Heat when Cold Outside
+        ## Turn On Office Fan Heat when Cold Outside
         ##########################################################
 
-- alias: Climate - Turn on Office Fan Heat when Cold Outside
+- alias: Climate - Turn On Office Fan Heat when Cold Outside
+  id: 'climate_turn_on_office_fan_heat_when_cold_outside'
 
   trigger:
     - platform: numeric_state
-      entity_id: sensor.dark_sky_temperature
-      below: 20
-      for:
-        hours: 0
-        minutes: 30
-        seconds: 0
+      entity_id: sensor.REDACTED_temperature
+      below: 15
 
   condition:
     - condition: state
       entity_id: input_boolean.disable_climate
       state: 'off'
     - condition: state
-      entity_id: group.winter_mode
-      state: 'on'
+      entity_id: sensor.season
+      state: 'winter'
     - condition: state
-      entity_id: device_tracker.USER1s_iphone
+      entity_id: person.USER1
       state: 'home'
     - condition: state
       entity_id: binary_sensor.office_occupancy
       state: 'on'
+    - condition: state
+      entity_id: fan.USER1s_office_fan
+      state: 'on'
+    - condition: not
+      conditions:
+      - condition: state
+        entity_id: person.USER2
+        state: 'home'
 
   action:
     - service: fan.turn_on
       entity_id:
-        - fan.office_fan
+        - fan.USER1s_office_fan
+    - delay: '00:00:01'
+    - service: fan.set_preset_mode
+      target:
+        entity_id: fan.USER1s_office_fan
       data:
-        speed: 'AUTO'
+        preset_mode: Auto
     - delay: '00:00:01'
     - service: climate.set_temperature
       data:
         entity_id: climate.office_fan
         temperature: 74
-        operation_mode: heat
+        hvac_mode: heat
     - delay: '00:00:01'
     - service: fan.oscillate
       data:
-        entity_id: fan.office_fan
+        entity_id: fan.USER1s_office_fan
         oscillating: 'true'
 
         ##########################################################
-        ## Turn off Office Fan Heat when warmer Outside
+        ## Turn Off Office Fan Heat when warmer Outside
         ##########################################################
 
-- alias: Climate - Turn off Office Fan Heat when warmer Outside
+- alias: Climate - Turn Off Office Fan Heat when warmer Outside
+  id: 'climate_turn_off_office_fan_heat_when_warmer_outside'
 
   trigger:
     - platform: numeric_state
-      entity_id: sensor.dark_sky_temperature
-      above: 20
-      for:
-        hours: 0
-        minutes: 30
-        seconds: 0
+      entity_id: sensor.REDACTED_temperature
+      above: 15
 
   condition:
     - condition: state
       entity_id: input_boolean.disable_climate
       state: 'off'
     - condition: state
-      entity_id: group.winter_mode
-      state: 'on'
+      entity_id: sensor.season
+      state: 'winter'
     - condition: state
-      entity_id: device_tracker.USER1s_iphone
+      entity_id: person.USER1
       state: 'home'
     - condition: state
       entity_id: binary_sensor.office_occupancy
+      state: 'on'
+    - condition: state
+      entity_id: fan.USER1s_office_fan
       state: 'on'
 
   action:
     - service: fan.turn_on
       entity_id:
-        - fan.office_fan
-      data:
-        speed: 'AUTO'
+        - fan.USER1s_office_fan
     - delay: '00:00:01'
-    - service: climate.set_operation_mode
+    - service: fan.set_preset_mode
+      target:
+        entity_id: fan.USER1s_office_fan
+      data:
+        preset_mode: Auto
+    - delay: '00:00:01'
+    - service: climate.set_hvac_mode
       data:
         entity_id: climate.office_fan
-        operation_mode: cool
+        hvac_mode: cool
     - delay: '00:00:01'
     - service: fan.oscillate
       data:
-        entity_id: fan.office_fan
+        entity_id: fan.USER1s_office_fan
         oscillating: 'true'
 
-
 #################################################################
-## Basement Heater
+## Portable AC
 #################################################################
 
         ##########################################################
-        ## Turn on Basement Heater when Cold
+        ## Turn Off Portable AC when Water Bin Full
         ##########################################################
 
-- alias: Climate - Turn on Basement Heater when Cold
-
-  trigger:
-    - platform: numeric_state
-      entity_id: sensor.basement_temperature
-      below: 65
-
-  condition:
-    - condition: state
-      entity_id: group.household
-      state: 'home'
-    - condition: state
-      entity_id: group.winter_mode
-      state: 'on'
-    - condition: state
-      entity_id: group.basement_occupancy
-      state: 'on'
-    - condition: state
-      entity_id: input_boolean.disable_climate
-      state: 'off'
-    - condition: state
-      entity_id: input_boolean.thermostat_away
-      state: 'off'
-
-  action:
-    - service: switch.turn_on
-      entity_id: switch.basement_heater
-
-        ##########################################################
-        ## Turn on Basement Heater when Occupied
-        ##########################################################
-
-- alias: Climate - Turn on Basement Heater when Occupied
+- alias: Climate - Turn Off Portable AC when Water Bin Full
+  id: 'climate_turn_off_portable_ac_when_water_bin_full'
 
   trigger:
     - platform: state
-      entity_id: group.basement_occupancy
-      from: 'off'
+      entity_id: binary_sensor.portable_ac_water_sensor
       to: 'on'
 
-  condition:
-    - condition: state
-      entity_id: group.household
-      state: 'home'
-    - condition: state
-      entity_id: group.winter_mode
-      state: 'on'
-    - condition: state
-      entity_id: input_boolean.disable_climate
-      state: 'off'
-    - condition: numeric_state
-      entity_id: sensor.basement_temperature
-      below: 65
-    - condition: state
-      entity_id: input_boolean.thermostat_away
-      state: 'off'
+#  condition:
+#    - condition: not
+#      conditions:
+#      - condition: state
+#        entity_id: climate.portable_air_conditioner
+#        state: 'unavailable'
+#    - condition: not
+#      conditions:
+#      - condition: state
+#        entity_id: climate.portable_air_conditioner
+#        state: 'off'
 
   action:
-    - service: switch.turn_on
-      entity_id: switch.basement_heater
+    - service: climate.turn_off
+      entity_id: climate.portable_air_conditioner
+    - delay: '00:02:00'
+    - service: switch.turn_off
+      entity_id: switch.portable_ac
 
         ##########################################################
-        ## Turn off Basement Heater when Unoccupied
+        ## Turn Off Portable AC if Water Bin Already Full
         ##########################################################
 
-- alias: Climate - Turn off Basement Heater when Unoccupied
+- alias: Climate - Turn Off Portable AC if Water Bin Already Full
+  id: 'climate_turn_off_portable_ac_if_water_bin_already_full'
 
   trigger:
     - platform: state
-      entity_id: group.basement_occupancy
-      from: 'on'
-      to: 'off'
-      for:
-        hours: 0
-        minutes: 60
-        seconds: 0
+      entity_id: climate.portable_air_conditioner
+      from: 'off'
+      to: 'cool'
 
   condition:
     - condition: state
-      entity_id: group.household
-      state: 'home'
-    - condition: state
-      entity_id: group.winter_mode
+      entity_id: binary_sensor.portable_ac_water_sensor
       state: 'on'
-    - condition: state
-      entity_id: input_boolean.disable_climate
-      state: 'off'
 
   action:
+    - service: climate.turn_off
+      entity_id: climate.portable_air_conditioner
+    - service: notify.USER1_devices
+      data:
+        message: Empty Portable AC Water Bin
+        data:
+          tag: climate
+          group: climate
+    - delay: '00:02:00'
     - service: switch.turn_off
-      entity_id: switch.basement_heater
+      entity_id: switch.portable_ac
 
         ##########################################################
-        ## Turn off Basement Heater when Warm
+        ## Turn Off Portable AC when Water Bin Full - iOS Notification
         ##########################################################
 
-- alias: Climate - Turn off Basement Heater when Warm
-
-  trigger:
-    - platform: numeric_state
-      entity_id: sensor.basement_temperature
-      above: 68
-
-  condition:
-    - condition: state
-      entity_id: input_boolean.disable_climate
-      state: 'off'
-
-  action:
-    - service: switch.turn_off
-      entity_id: switch.basement_heater
-
-        ##########################################################
-        ## Turn on Basement Heater when Washing Machine Starts
-        ##########################################################
-
-- alias: Climate - Turn on Basement Heater when Washing Machine Starts
+- alias: Climate - Turn Off Portable AC when Water Bin Full iOS Notification
+  id: 'climate_turn_off_portable_ac_when_water_bin_full_ios_notification'
 
   trigger:
     - platform: state
-      entity_id: sensor.washing_machine_status
-      from: 'not running'
-      to: 'running'
-      for:
-        hours: 0
-        minutes: 10
-        seconds: 0
-
-  condition:
-    - condition: state
-      entity_id: group.household
-      state: 'home'
-    - condition: state
-      entity_id: input_boolean.disable_climate
-      state: 'off'
-    - condition: state
-      entity_id: group.winter_mode
-      state: 'on'
-    - condition: numeric_state
-      entity_id: sensor.basement_temperature
-      below: 65
-    - condition: time
-      after: '08:00'
-      before: '21:00'
-    - condition: state
-      entity_id: input_boolean.thermostat_away
-      state: 'off'
+      entity_id: binary_sensor.portable_ac_water_sensor
+      to: 'on'
 
   action:
-    - service: switch.turn_on
-      entity_id: switch.basement_heater
+    - service: notify.USER1_devices
+      data:
+        message: Empty Portable AC Water Bin
+        data:
+          tag: climate
+          group: climate
 
 #################################################################
 ## Input Booleans, Input Selects, and UI
@@ -913,6 +1484,7 @@
         ##########################################################
 
 - alias: Climate - Clear Thermostat Hold Mode Manually
+  id: 'climate_clear_thermostat_hold_manually'
 
   trigger:
     - platform: state
@@ -920,10 +1492,10 @@
       to: "Clear Holds"
 
   action:
-    - service: climate.set_hold_mode
+    - service: ecobee.resume_program
       data:
         entity_id: climate.main_floor
-        hold_mode: None
+        resume_all: true
     - service: homeassistant.turn_off
       entity_id: input_boolean.thermostat_away
 
@@ -932,6 +1504,7 @@
         ##########################################################
 
 - alias: Climate - Set Home Mode Manually
+  id: 'climate_set_home_mode_manually'
 
   trigger:
     - platform: state
@@ -939,10 +1512,10 @@
       to: 'Home'
 
   action:
-    - service: climate.set_hold_mode
+    - service: climate.set_preset_mode
       data:
         entity_id: climate.main_floor
-        hold_mode: "home"
+        preset_mode: 'home'
     - service: homeassistant.turn_off
       entity_id: input_boolean.thermostat_away
 
@@ -951,6 +1524,7 @@
         ##########################################################
 
 - alias: Climate - Set Away Mode Manually
+  id: 'climate_set_away_mode_manually'
 
   trigger:
     - platform: state
@@ -966,6 +1540,7 @@
         ##########################################################
 
 - alias: Climate - Set Sleep Mode Manually
+  id: 'climate_set_sleep_mode_manually'
 
   trigger:
     - platform: state
@@ -973,10 +1548,10 @@
       to: 'Sleep'
 
   action:
-    - service: climate.set_hold_mode
+    - service: climate.set_preset_mode
       data:
         entity_id: climate.main_floor
-        hold_mode: "sleep"
+        preset_mode: 'Sleep'
     - service: homeassistant.turn_off
       entity_id: input_boolean.thermostat_away
 
@@ -985,6 +1560,7 @@
         ##########################################################
 
 - alias: Climate - Set Upstairs Mode Manually
+  id: 'climate_set_upstairs_mode_manually'
 
   trigger:
     - platform: state
@@ -992,10 +1568,10 @@
       to: 'Upstairs'
 
   action:
-    - service: climate.set_hold_mode
+    - service: climate.set_preset_mode
       data:
         entity_id: climate.main_floor
-        hold_mode: "smart2"
+        preset_mode: 'Upstairs'
     - service: homeassistant.turn_off
       entity_id: input_boolean.thermostat_away
 
@@ -1004,6 +1580,7 @@
         ##########################################################
 
 - alias: Climate - Set Guest Mode Manually
+  id: 'climate_set_guest_mode_manually'
 
   trigger:
     - platform: state
@@ -1011,10 +1588,10 @@
       to: 'Guest'
 
   action:
-    - service: climate.set_hold_mode
+    - service: climate.set_preset_mode
       data:
         entity_id: climate.main_floor
-        hold_mode: "smart3"
+        preset_mode: 'Guest'
     - service: homeassistant.turn_off
       entity_id: input_boolean.thermostat_away
 
@@ -1023,6 +1600,7 @@
         ##########################################################
 
 - alias: Climate - Set Fireplace Mode Manually
+  id: 'climate_set_fireplace_mode_manually'
 
   trigger:
     - platform: state
@@ -1030,60 +1608,9 @@
       to: 'Fireplace'
 
   action:
-    - service: climate.set_hold_mode
+    - service: climate.set_preset_mode
       data:
         entity_id: climate.main_floor
-        hold_mode: "smart4"
+        preset_mode: 'Fireplace'
     - service: homeassistant.turn_off
       entity_id: input_boolean.thermostat_away
-
-        ##########################################################
-        ## Summer Mode On Everything Else Off
-        ##########################################################
-
-- alias: Climate - Summer Mode On Everything Else Off
-
-  trigger:
-    - platform: state
-      entity_id: group.summer_mode
-      to: 'on'
-
-  action:
-    - service: homeassistant.turn_off
-      entity_id:
-        - group.winter_mode
-        - input_boolean.spring_fall_mode
-
-        ##########################################################
-        ## Winter Mode On Everything Else Off
-        ##########################################################
-
-- alias: Climate - Winter Mode On Everything Else Off
-
-  trigger:
-    - platform: state
-      entity_id: group.winter_mode
-      to: 'on'
-
-  action:
-    - service: homeassistant.turn_off
-      entity_id:
-        - group.summer_mode
-        - input_boolean.spring_fall_mode
-
-        ##########################################################
-        ## Spring / Fall Mode On Everything Else Off
-        ##########################################################
-
-- alias: Climate - Spring / Fall Mode On Everything Else Off
-
-  trigger:
-    - platform: state
-      entity_id: input_boolean.spring_fall_mode
-      to: 'on'
-
-  action:
-    - service: homeassistant.turn_off
-      entity_id:
-        - group.winter_mode
-        - group.summer_mode

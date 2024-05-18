@@ -2,148 +2,170 @@
 ## Laundry Automations
 #################################################################
 
+#################################################################
+## Notifications
+#################################################################
+
         ##########################################################
-        ## Washing Machine Done - USER1 Notification
+        ## Washing Machine Done - USER1 iOS Notification
         ##########################################################
 
-- alias: Laundry - Washing Machine Done USER1 Notification
+- alias: Laundry - Washing Machine Done USER1 iOS Notification
+  id: 'laundry_washing_machine_done_USER1_ios_notification'
 
   trigger:
     - platform: state
-      entity_id: sensor.washing_machine_status
-      from: 'running'
-      to: 'not running'
+      entity_id: binary_sensor.washer_wash_completed
+      from: 'off'
+      to: 'on'
       for:
         hours: 0
-        minutes: 2
-        seconds: 0
+        minutes: 0
+        seconds: 1
 
   condition:
     - condition: state
       entity_id: group.household
       state: 'home'
     - condition: state
-      entity_id: device_tracker.USER1s_iphone
+      entity_id: person.USER1
       state: 'home'
     - condition: state
       entity_id: input_boolean.disable_notifications
       state: 'off'
 
   action:
-    - service: notify.ios_USER1s_iphone
+    - service: notify.USER1_devices
       data:
-        message: Washing Machine Done
+        message: Washing Machine Finished
         data:
-          push:
-            badge: 0
-            category: "washingmachinedonelights"
+          tag: washer
+          group: laundry
 
         ##########################################################
-        ## Washing Machine Done - USER2 Notification
+        ## Dryer Done - USER1 iOS Notification
         ##########################################################
 
-- alias: Laundry - Washing Machine Done USER2 Notification
+- alias: Laundry - Dryer Done USER1 iOS Notification
+  id: 'laundry_dryer_done_USER1_ios_notification'
 
   trigger:
     - platform: state
-      entity_id: sensor.washing_machine_status
-      from: 'running'
-      to: 'not running'
+      entity_id: binary_sensor.dryer_dry_completed
+      from: 'off'
+      to: 'on'
       for:
         hours: 0
-        minutes: 2
-        seconds: 0
+        minutes: 0
+        seconds: 1
 
   condition:
     - condition: state
       entity_id: group.household
       state: 'home'
     - condition: state
-      entity_id: device_tracker.USER2s_iphone
+      entity_id: person.USER1
       state: 'home'
     - condition: state
       entity_id: input_boolean.disable_notifications
       state: 'off'
 
   action:
-    - service: notify.ios_USER2s_iphone
+    - service: notify.USER1_devices
       data:
-        message: Washing Machine Done
+        message: Dryer Finished
         data:
-          push:
-            badge: 0
-            category: "washingmachinedonelights"
+          tag: dryer
+          group: laundry
 
         ##########################################################
-        ## Washing Machine Done - Lights On
+        ## Washing Machine Done - USER2 iOS Notification
         ##########################################################
 
-- alias: Laundry - Washing Machine Done - Lights On
+- alias: Laundry - Washing Machine Done USER2 iOS Notification
+  id: 'laundry_washing_machine_done_USER2_ios_notification'
 
   trigger:
     - platform: state
-      entity_id: sensor.washing_machine_status
-      from: 'running'
-      to: 'not running'
+      entity_id: binary_sensor.washer_wash_completed
+      from: 'off'
+      to: 'on'
       for:
         hours: 0
-        minutes: 2
-        seconds: 0
+        minutes: 0
+        seconds: 1
 
   condition:
     - condition: state
       entity_id: group.household
       state: 'home'
-    - condition: time
-      after: '09:00'
-      before: '21:00'
-
-  action:
-    - service: light.turn_on
-      entity_id:
-        - light.laundry_room_light
-
-        ##########################################################
-        ## Washing Machine Switch Off Notification
-        ##########################################################
-
-- alias: Laundry - Washing Machine Switch Off Notification
-
-  trigger:
-    - platform: state
-      entity_id: switch.washing_machine
-      from: 'on'
-      to: 'off'
-
-  condition:
+    - condition: state
+      entity_id: person.USER2
+      state: 'home'
     - condition: state
       entity_id: input_boolean.disable_notifications
       state: 'off'
 
   action:
-    - service: notify.ios_USER1s_iphone
+    - service: notify.USER2_devices
       data:
-        message: Washing Machine Switch Turned Off!
+        message: Washing Machine Finished
         data:
-          push:
-            badge: 0
-            category: "washingmachineswitch"
+          tag: washer
+          group: laundry
+
+        ##########################################################
+        ## Dryer Done - USER2 iOS Notification
+        ##########################################################
+
+- alias: Laundry - Dryer Done USER2 iOS Notification
+  id: 'laundry_dryer_done_USER2_ios_notficiation'
+
+  trigger:
+    - platform: state
+      entity_id: binary_sensor.dryer_dry_completed
+      from: 'off'
+      to: 'on'
+      for:
+        hours: 0
+        minutes: 0
+        seconds: 1
+
+  condition:
+    - condition: state
+      entity_id: group.household
+      state: 'home'
+    - condition: state
+      entity_id: person.USER2
+      state: 'home'
+    - condition: state
+      entity_id: input_boolean.disable_notifications
+      state: 'off'
+
+  action:
+    - service: notify.USER2_devices
+      data:
+        message: Dryer Finished
+        data:
+          tag: dryer
+          group: laundry
 
         ##########################################################
         ## Washing Machine Done - Audio Notification
         ##########################################################
 
 - alias: Laundry - Washing Machine Done Audio Notification
+  id: 'laundry_washing_machine_done_audio_notification'
 
   trigger:
     - platform: state
-      entity_id: sensor.washing_machine_status
-      from: 'running'
-      to: 'not running'
+      entity_id: binary_sensor.washer_wash_completed
+      from: 'off'
+      to: 'on'
       for:
         hours: 0
-        minutes: 5
-        seconds: 0
+        minutes: 0
+        seconds: 1
 
   condition:
     - condition: state
@@ -153,37 +175,101 @@
       entity_id: input_boolean.disable_notifications
       state: 'off'
     - condition: time
-      after: '09:00'
-      before: '20:30'
+      after: '09:00:00'
+      before: '20:00:00'
 
   action:
-    - service: script.turn_on
-      entity_id: script.say
+    - service: media_player.play_media
+      target:
+        entity_id: 
+          - media_player.sonos_living_room
+          - media_player.sonos_kitchen
+          - media_player.sonos_bathroom
+          - media_player.sonos_USER1s_office
+          - media_player.sonos_USER2s_office
+          - media_player.sonos_move
+          - media_player.sonos_fitness_room
+          - media_player.sonos_craft_room
       data:
-        variables:
-          master: 'media_player.sonos_living_room'
-          where: 'media_player.sonos_living_room, media_player.sonos_dining_room, media_player.sonos_kitchen, media_player.sonos_USER2s_office'
-          volume: '0.5'
-          what: 'Washing Machine Has Finished'
+        announce: true
+        media_content_id: >
+          media-source://tts/cloud?message="Washing Machine Has Finished"
+        media_content_type: "music"
+        extra:
+          volume: 50
 
         ##########################################################
-        ## Shut off Washing Machine if Water Detected
+        ## Dryer Done - Audio Notification
         ##########################################################
 
-- alias: Laundry - Shut off Washing Machine if Water Detected
+- alias: Laundry - Dryer Done Audio Notification
+  id: 'laundry_dryer_done_audio_notification'
 
   trigger:
     - platform: state
-      entity_id: binary_sensor.basement_drain_water_sensor_liquid_detected
+      entity_id: binary_sensor.dryer_dry_completed
       from: 'off'
       to: 'on'
+      for:
+        hours: 0
+        minutes: 0
+        seconds: 1
 
   condition:
     - condition: state
-      entity_id: input_boolean.disable_water_sensors
+      entity_id: group.household
+      state: 'home'
+    - condition: state
+      entity_id: input_boolean.disable_notifications
+      state: 'off'
+    - condition: time
+      after: '09:00:00'
+      before: '20:00:00'
+
+  action:
+    - service: media_player.play_media
+      target:
+        entity_id: 
+          - media_player.sonos_living_room
+          - media_player.sonos_kitchen
+          - media_player.sonos_bathroom
+          - media_player.sonos_USER1s_office
+          - media_player.sonos_USER2s_office
+          - media_player.sonos_move
+          - media_player.sonos_fitness_room
+          - media_player.sonos_craft_room
+      data:
+        announce: true
+        media_content_id: >
+          media-source://tts/cloud?message="Dryer Has Finished"
+        media_content_type: "music"
+        extra:
+          volume: 50
+
+        ##########################################################
+        ## Washer Run Tub Clean Notification
+        ##########################################################
+
+- alias: Laundry - Washer Run Tub Clean Notification
+  id: 'laundry_washer_run_tub_clean_notification'
+
+  trigger:
+    - platform: numeric_state
+      entity_id: sensor.washer_tub_clean
+      above: 29
+
+  condition:
+    - condition: state
+      entity_id: group.household
+      state: 'home'
+    - condition: state
+      entity_id: input_boolean.disable_notifications
       state: 'off'
 
   action:
-    - service: switch.turn_off
-      entity_id:
-        - switch.washing_machine
+    - service: notify.USER1_devices
+      data:
+        message: Time to Run a Tub Clean Cycler on the Washer
+        data:
+          tag: washer-clean
+          group: laundry

@@ -7,76 +7,137 @@
 #################################################################
 
         ##########################################################
-        ## Summer Mode
+        ## Living Room Random Light Color
         ##########################################################
 
   - platform: template
     switches:
-      summer_mode:
-        value_template: "{{ is_state('group.summer_mode', 'on') }}"
+      livingroom_rainbow:
+        value_template: "{{ is_state('input_boolean.livingroom_rainbow', 'on') }}"
         turn_on:
           service: homeassistant.turn_on
           data:
-            entity_id: group.summer_mode
+            entity_id: input_boolean.livingroom_rainbow
         turn_off:
           service: homeassistant.turn_off
           data:
-            entity_id: group.summer_mode
+            entity_id: input_boolean.livingroom_rainbow
 
         ##########################################################
-        ## Winter Mode
+        ## Bedroom Random Light Color
         ##########################################################
 
   - platform: template
     switches:
-      winter_mode:
-        value_template: "{{ is_state('group.winter_mode', 'on') }}"
+      bedroom_rainbow:
+        value_template: "{{ is_state('input_boolean.bedroom_rainbow', 'on') }}"
         turn_on:
           service: homeassistant.turn_on
           data:
-            entity_id: group.winter_mode
+            entity_id: input_boolean.bedroom_rainbow
         turn_off:
           service: homeassistant.turn_off
           data:
-            entity_id: group.winter_mode
+            entity_id: input_boolean.bedroom_rainbow
 
         ##########################################################
-        ## Backyard Lighting
+        ## Office Random Light Color
         ##########################################################
 
   - platform: template
     switches:
-      backyard_lighting:
-        value_template: "{{ is_state('group.backyard_lighting', 'on') }}"
+      office_rainbow:
+        value_template: "{{ is_state('input_boolean.office_rainbow', 'on') }}"
         turn_on:
           service: homeassistant.turn_on
           data:
-            entity_id: group.backyard_lighting
+            entity_id: input_boolean.office_rainbow
         turn_off:
           service: homeassistant.turn_off
           data:
-            entity_id: group.backyard_lighting
+            entity_id: input_boolean.office_rainbow
 
         ##########################################################
-        ## Pihole #1 Disable Switch
+        ## Front Porch Random Light Color
         ##########################################################
 
-  - platform: command_line
+  - platform: template
     switches:
-      pihole_1_switch:
-        command_on: "curl -X GET 'http://REDACTED.4/REDACTED/api.php?enable&auth=REDACTED'"
-        command_off: "curl -X GET 'http://REDACTED.4/REDACTED/api.php?disable=1800&auth=REDACTED'"
-        command_state: "curl -X GET 'http://REDACTED.4/REDACTED/api.php?status'"
-        value_template: "{{ value_json.status == 'enabled' }}"
+      front_porch_rainbow:
+        value_template: "{{ is_state('input_boolean.front_porch_rainbow', 'on') }}"
+        turn_on:
+          service: homeassistant.turn_on
+          data:
+            entity_id: input_boolean.front_porch_rainbow
+        turn_off:
+          service: homeassistant.turn_off
+          data:
+            entity_id: input_boolean.front_porch_rainbow
 
         ##########################################################
-        ## Pihole #2 Disable Switch
+        ## Bedtime Switch
         ##########################################################
 
-  - platform: command_line
+  - platform: template
     switches:
-      pihole_2_switch:
-        command_on: "curl -X GET 'http://REDACTED.5/REDACTED/api.php?enable&auth=REDACTED'"
-        command_off: "curl -X GET 'http://REDACTED.5/REDACTED/api.php?disable=1800&auth=REDACTED'"
-        command_state: "curl -X GET 'http://REDACTED.5/REDACTED/api.php?status'"
-        value_template: "{{ value_json.status == 'enabled' }}"
+      bedtime:
+        value_template: "{{ is_state('input_boolean.bedtime', 'on') }}"
+        turn_on:
+          service: homeassistant.turn_on
+          data:
+            entity_id: input_boolean.bedtime
+        turn_off:
+          service: homeassistant.turn_off
+          data:
+            entity_id: input_boolean.bedtime
+
+        ##########################################################
+        ## Panic Mode
+        ##########################################################
+
+  - platform: template
+    switches:
+      panic_mode:
+        value_template: "{{ is_state('input_boolean.panic_mode', 'on') }}"
+        turn_on:
+          service: homeassistant.turn_on
+          data:
+            entity_id: input_boolean.panic_mode
+        turn_off:
+          service: homeassistant.turn_off
+          data:
+            entity_id: input_boolean.panic_mode
+
+        ##########################################################
+        ## Disable Smoke Alarm
+        ##########################################################
+
+  - platform: template
+    switches:
+      disable_smoke_alarm:
+        value_template: "{{ is_state('input_boolean.disable_smoke_alarm', 'on') }}"
+        turn_on:
+          service: homeassistant.turn_on
+          data:
+            entity_id: input_boolean.disable_smoke_alarm
+        turn_off:
+          service: homeassistant.turn_off
+          data:
+            entity_id: input_boolean.disable_smoke_alarm
+
+        ##########################################################
+        ## Living Room Fans
+        ##########################################################
+
+  - platform: template
+    switches:
+      living_room_fans:
+        value_template: "{{ is_state('fan.living_room_fans', 'on') }}"
+        turn_on:
+          service: homeassistant.turn_on
+          data:
+            entity_id: fan.living_room_fans
+        turn_off:
+          service: homeassistant.turn_off
+          data:
+            entity_id: fan.living_room_fans
